@@ -308,7 +308,7 @@
         "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"👑 <b>Панель керування: Ремонт Під Ключ</b>\\n\\nВітаємо, Андрію! Ви увійшли з правами <b>Адміністратора</b>.\\nВам доступне керування вхідними лідами та тестування калькулятора.\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"👑 Відкрити адмін-панель заявок\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ],\n      [\n        {\n          \"text\": \"🧮 Тестовий клієнтський квіз\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
+        "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>Ремонт Під Ключ</b>\\n\\nВітаємо, Андрію! Доступ активовано з правами <b>Адміністратора</b>.\\n\\nНатисніть кнопку нижче, щоб відкрити додаток:\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"🚀 Відкрити сервіс\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
       },
       "id": "node-send-admin-start",
       "name": "Меню для Адміна",

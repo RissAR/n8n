@@ -21,6 +21,38 @@ const START_DATE_OPTIONS: { id: StartDateOption; label: string }[] = [
   { id: 'pricing', label: 'Поки просто прицінююся' },
 ];
 
+export const formatUkrainianPhone = (input: string): string => {
+  const allDigits = input.replace(/\D/g, '');
+  let nationalDigits = '';
+
+  if (allDigits.startsWith('380')) {
+    nationalDigits = allDigits.slice(3);
+  } else if (allDigits.startsWith('80')) {
+    nationalDigits = allDigits.slice(2);
+  } else if (allDigits.startsWith('0')) {
+    nationalDigits = allDigits.slice(1);
+  } else {
+    nationalDigits = allDigits;
+  }
+
+  // Maximum 9 national digits (e.g. 50 123 45 67)
+  nationalDigits = nationalDigits.slice(0, 9);
+
+  if (nationalDigits.length === 0) {
+    return '+380';
+  }
+  if (nationalDigits.length <= 2) {
+    return `+380 (${nationalDigits}`;
+  }
+  if (nationalDigits.length <= 5) {
+    return `+380 (${nationalDigits.slice(0, 2)}) ${nationalDigits.slice(2)}`;
+  }
+  if (nationalDigits.length <= 7) {
+    return `+380 (${nationalDigits.slice(0, 2)}) ${nationalDigits.slice(2, 5)}-${nationalDigits.slice(5)}`;
+  }
+  return `+380 (${nationalDigits.slice(0, 2)}) ${nationalDigits.slice(2, 5)}-${nationalDigits.slice(5, 7)}-${nationalDigits.slice(7, 9)}`;
+};
+
 export const Step5Contact: React.FC<Step5Props> = ({
   name,
   phone,
@@ -32,34 +64,10 @@ export const Step5Contact: React.FC<Step5Props> = ({
   isLoading,
   errorMessage,
 }) => {
-  // Format phone number to clean +380XXXXXXXXX
   const handlePhoneInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let val = e.target.value;
-
-    // Remove any character except + and digits
-    val = val.replace(/[^\d+]/g, '');
-
-    // Ensure it begins with +380
-    if (!val.startsWith('+380')) {
-      // If user typed 380 or 0...
-      const digits = val.replace(/\D/g, '');
-      if (digits.startsWith('380')) {
-        val = `+${digits}`;
-      } else if (digits.startsWith('0')) {
-        val = `+38${digits}`;
-      } else if (digits.length > 0) {
-        val = `+380${digits}`;
-      } else {
-        val = '+380';
-      }
-    }
-
-    // Limit to +380 + 9 digits = 13 characters
-    if (val.length > 13) {
-      val = val.slice(0, 13);
-    }
-
-    onPhoneChange(val);
+    const rawVal = e.target.value;
+    const formatted = formatUkrainianPhone(rawVal);
+    onPhoneChange(formatted);
   };
 
   const handleStartDateSelect = (option: StartDateOption) => {
@@ -67,7 +75,9 @@ export const Step5Contact: React.FC<Step5Props> = ({
     onStartDateChange(option);
   };
 
-  const isPhoneValid = phone.startsWith('+380') && phone.replace(/\D/g, '').length === 12;
+  // 9 digits after country code 380
+  const nationalDigits = phone.replace(/\D/g, '').replace(/^380/, '');
+  const isPhoneValid = nationalDigits.length === 9;
 
   return (
     <div className="space-y-5">
@@ -103,7 +113,7 @@ export const Step5Contact: React.FC<Step5Props> = ({
         </div>
       </div>
 
-      {/* Phone Input */}
+      {/* Phone Input with Ukrainian Mask */}
       <div className="space-y-1.5">
         <label className="text-xs font-semibold text-[#9CA3AF] flex items-center gap-1.5">
           <Phone className="w-3.5 h-3.5 text-[#F59E0B]" />
@@ -114,17 +124,25 @@ export const Step5Contact: React.FC<Step5Props> = ({
             type="tel"
             value={phone}
             onChange={handlePhoneInput}
-            placeholder="+380501234567"
+            placeholder="+380 (XX) XXX-XX-XX"
             className={`w-full bg-[#1A1F24] border rounded-xl px-4 py-3 text-sm text-[#F3F4F6] placeholder-[#6B7280] focus:outline-none transition-colors ${
-              phone.length >= 13 && !isPhoneValid
-                ? 'border-red-500'
+              isPhoneValid
+                ? 'border-[#F59E0B] ring-1 ring-[#F59E0B]/30'
                 : 'border-[#2D343B] focus:border-[#F59E0B]'
             }`}
           />
         </div>
-        <p className="text-[11px] text-[#6B7280]">
-          Формат: +380 (XX) XXX-XX-XX
-        </p>
+        <div className="flex items-center justify-between text-[11px] text-[#6B7280] px-0.5">
+          <span>Формат: +380 (XX) XXX-XX-XX</span>
+          {nationalDigits.length > 0 && !isPhoneValid && (
+            <span className="text-amber-400 font-medium">
+              Залишилось цифр: {9 - nationalDigits.length}
+            </span>
+          )}
+          {isPhoneValid && (
+            <span className="text-emerald-400 font-medium">✓ Номер заповнено</span>
+          )}
+        </div>
       </div>
 
       {/* Start Date Selection */}
@@ -169,11 +187,15 @@ export const Step5Contact: React.FC<Step5Props> = ({
           type="button"
           onClick={onSubmit}
           disabled={isLoading || !isPhoneValid}
-          className="w-full py-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#E08316] hover:to-[#C25E12] active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none transition-all shadow-[0_4px_20px_rgba(217,119,6,0.3)] flex items-center justify-center gap-2 border border-[#F59E0B]/40"
+          className={`w-full py-4 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 border ${
+            !isPhoneValid || isLoading
+              ? 'bg-[#232A31] border-[#2D343B] text-[#6B7280] opacity-40 cursor-not-allowed shadow-none'
+              : 'bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#E08316] hover:to-[#C25E12] active:scale-[0.99] border-[#F59E0B]/40 shadow-[0_4px_20px_rgba(217,119,6,0.3)]'
+          }`}
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin text-[#F59E0B]" />
               <span>Розраховуємо кошторис...</span>
             </>
           ) : (

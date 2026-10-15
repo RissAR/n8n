@@ -22,10 +22,11 @@ import { calculateEstimate } from './utils/calculator';
 import { checkIsAdmin, ADMIN_USER_ID } from './utils/auth';
 import {
   getTelegramUser,
-  getTelegramWebApp,
   hapticImpact,
   hapticNotification,
-  initTelegram,
+  initTelegramApp,
+  showBackButton,
+  hideBackButton,
 } from './utils/telegram';
 
 export const App: React.FC = () => {
@@ -104,7 +105,7 @@ export const App: React.FC = () => {
 
   // 4. Initialize Telegram WebApp on mount
   useEffect(() => {
-    initTelegram();
+    initTelegramApp();
     const user = getTelegramUser();
     if (user) {
       setTgUser(user);
@@ -116,43 +117,15 @@ export const App: React.FC = () => {
 
   // 5. Telegram BackButton handler sync
   useEffect(() => {
-    const tg = getTelegramWebApp();
-    if (!tg?.BackButton) return;
-
-    try {
-      if (activeTab === 'admin') {
-        tg.BackButton?.show?.();
-        const onBackToQuiz = () => {
-          handleTabChange('quiz');
-        };
-        tg.BackButton?.onClick?.(onBackToQuiz);
-        return () => {
-          try {
-            tg.BackButton?.offClick?.(onBackToQuiz);
-          } catch {
-            // Ignore
-          }
-        };
-      } else if (step > 1 && step < 6) {
-        tg.BackButton?.show?.();
-        const onBack = () => {
-          handlePrevStep();
-        };
-        tg.BackButton?.onClick?.(onBack);
-        return () => {
-          try {
-            tg.BackButton?.offClick?.(onBack);
-          } catch {
-            // Ignore
-          }
-        };
-      } else {
-        tg.BackButton?.hide?.();
-      }
-    } catch (e) {
-      console.warn('Telegram BackButton warning:', e);
+    if (activeTab === 'quiz' && step > 1 && step <= 5) {
+      showBackButton(handlePrevStep);
+      return () => {
+        hideBackButton();
+      };
+    } else {
+      hideBackButton();
     }
-  }, [activeTab, step, handlePrevStep, handleTabChange]);
+  }, [activeTab, step, handlePrevStep]);
 
   // 6. Submit calculation payload to n8n Webhook
   const handleSubmit = async () => {

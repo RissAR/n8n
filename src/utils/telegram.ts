@@ -7,7 +7,7 @@ export const getTelegramWebApp = (): TelegramWebApp | undefined => {
   return undefined;
 };
 
-export const initTelegram = (): void => {
+export const initTelegramApp = (): void => {
   const tg = getTelegramWebApp();
   if (tg) {
     try {
@@ -15,9 +15,45 @@ export const initTelegram = (): void => {
       tg.expand?.();
       tg.setHeaderColor?.('#121518');
       tg.setBackgroundColor?.('#121518');
+      tg.enableClosingConfirmation?.();
     } catch (e) {
       console.warn('Telegram WebApp init warning:', e);
     }
+  }
+};
+
+export const initTelegram = initTelegramApp;
+
+let currentBackCallback: (() => void) | null = null;
+
+export const showBackButton = (onBack: () => void): void => {
+  const tg = getTelegramWebApp();
+  if (!tg?.BackButton) return;
+
+  try {
+    if (currentBackCallback) {
+      tg.BackButton.offClick?.(currentBackCallback);
+    }
+    currentBackCallback = onBack;
+    tg.BackButton.onClick?.(onBack);
+    tg.BackButton.show?.();
+  } catch (e) {
+    console.warn('Error showing Telegram BackButton:', e);
+  }
+};
+
+export const hideBackButton = (): void => {
+  const tg = getTelegramWebApp();
+  if (!tg?.BackButton) return;
+
+  try {
+    if (currentBackCallback) {
+      tg.BackButton.offClick?.(currentBackCallback);
+      currentBackCallback = null;
+    }
+    tg.BackButton.hide?.();
+  } catch (e) {
+    console.warn('Error hiding Telegram BackButton:', e);
   }
 };
 

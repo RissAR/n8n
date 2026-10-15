@@ -1,101 +1,66 @@
-# CURRENT TASK: ФАЗА 2 — Розробка фронтенду Telegram Mini App (React + Vite + Tailwind)
+# CURRENT TASK: КРОК 1 — Фундамент стабільності (Anti-Cache & Hardening First)
 
-## 1. Мета та контекст
-Створити клієнтську частину Telegram Mini App (TMA) для «Квіз-калькулятора ремонту квартир». Додаток запускається всередині Telegram, збирає вибір користувача через 5-кроковий інтерактивний візард, відправляє зібрані дані на Webhook n8n та відображає розраховану вартість із бази.
-
----
-
-## 2. Стек та архітектура проекту
-- **Фреймворк:** React 18 + Vite + TypeScript
-- **Стилізація:** Tailwind CSS (темна гранітно-бурштинова палітра)
-- **Іконки:** `lucide-react`
-- **Telegram SDK:** `https://telegram.org/js/telegram-web-app.js` через `window.Telegram.WebApp`
-- **Локальний запуск:** `npm run dev` (Vite) + Cloudflare Tunnel (`cloudflared tunnel --url http://localhost:5173`)
+## 1. Мета задачі
+Ліквідувати ризики «білого екрана» та агресивного кешування Telegram Webview на iOS/Android/Desktop. Гарантувати, що будь-яка правка коду одразу потрапляє до користувача, чанки файлів мають унікальні хеші, а додаток надійно захищений від зуму та небажаних жестів браузера.
 
 ---
 
-## 3. Дизайн-система (Кольорова палітра «Графіт, Бурштин та Дерево»)
-- **Фон додатку:** `bg-[#121518]` (глибокий графіт)
-- **Картки та контейнери:** `bg-[#1A1F24]/90` з тонким бордером `border-[#2D343B]`
-- **Акценти (активна картка, кнопки, прогрес):** теплий бурштиновий/деревний градієнт `from-[#D97706] to-[#B45309]` та `border-[#F59E0B]`
-- **Тексти:** основний `#F3F4F6`, додатковий/опис тарифів `#9CA3AF`, виділена ціна `#FBBF24`
-- **Haptic Feedback:** легка вібрація (`Telegram.WebApp.HapticFeedback.impactOccurred('light')`) при перемиканні кроків, виборі карток та чекбоксів.
+## 2. Перелік завдань та файлів для модифікації
+
+### 1) Оновлення `index.html` (Anti-Cache мета-теги та захист Viewport)
+- **Файл:** `index.html`
+- **Вимоги:**
+  - Додати HTTP-заголовки заборони кешування в `<head>`:
+    ```html
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    ```
+  - Налаштувати жорсткий мобільний `viewport`, адаптований під Telegram WebApp (запобігає подвійному тапу, випадковому зумуванню та враховує «чубчик» на iPhone):
+    ```html
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    ```
+
+### 2) Налаштування хешування бандла у `vite.config.ts`
+- **Файл:** `vite.config.ts`
+- **Вимоги:**
+  - Додати конфігурацію `build.rollupOptions.output` із примусовим хешуванням чанків:
+    ```typescript
+    build: {
+      rollupOptions: {
+        output: {
+          entryFileNames: 'assets/[name].[hash].js',
+          chunkFileNames: 'assets/[name].[hash].js',
+          assetFileNames: 'assets/[name].[hash].[ext]',
+        },
+      },
+    },
+    ```
+  - Зберегти налаштування `server: { host: true, port: 5173, allowedHosts: true }`.
+
+### 3) Створення файлу версіонування `src/constants/version.ts`
+- **Файл:** `src/constants/version.ts`
+- **Вимоги:**
+  - Експортувати константу версії:
+    ```typescript
+    export const APP_VERSION = '1.0.0';
+    ```
+  - У `src/main.tsx` при ініціалізації виводити версію у консоль: `console.log('🚀 TMA Quiz Version:', APP_VERSION);`.
+
+### 4) Відмовостійкість у `src/utils/telegram.ts`
+- **Файл:** `src/utils/telegram.ts`
+- **Вимоги:**
+  - Перевірити всі методи взаємодії з `window.Telegram.WebApp`. Якщо додаток відкрито у звичайному браузері (поза Telegram), методи `HapticFeedback`, `setHeaderColor`, `BackButton` тощо мають безпечно ігноруватися або логуватися через optional chaining (`?.`), не викликаючи падіння застосунку (Uncaught TypeError).
 
 ---
 
-## 4. Покроковий флоу квізу (5 кроків + екран результату)
-
-### Крок 1: Тип ремонту (Single Choice)
-- `cosmetic`: **Косметичний** — 2 500 грн/м² *(Оновлення оздоблення, шпалери, ламінат)*
-- `capital`: **Капітальний** — 5 000 грн/м² *(Стяжка, штукатурка, перепланування, чорнові роботи)*
-- `designer`: **Дизайнерський «під ключ»** — 8 500 грн/м² *(Авторський нагляд, преміум-матеріали, повний цикл)*
-
-### Крок 2: Стан житла (Single Choice)
-- `new`: **Новобудова** *(Коефіцієнт x1.0, чистовий стан після забудовника)*
-- `secondary`: **Вторинне житло** *(Коефіцієнт x1.25, демонтаж старих покриттів та комунікацій)*
-
-### Крок 3: Площа приміщення (Range + Number Input)
-- Інтерактивний повзунок від 20 до 250 м²
-- Числове поле поруч з можливістю точного ручного вводу
-- Значення за замовчуванням: 50 м²
-
-### Крок 4: Додаткові опції (Multi Choice / Checkboxes)
-- `design_project`: **Дизайн-проєкт** (+15 000 грн)
-- `electric_plumbing`: **Сантехніка та електрика під ключ** (+25 000 грн)
-- `materials_delivery`: **Закупівля та логістика матеріалів** (+8 000 грн)
-
-### Крок 5: Контактні дані та дата старту
-- **Ім'я:** поле вводу (автопідстановка `first_name` з `Telegram.WebApp.initDataUnsafe.user`)
-- **Телефон:** поле з маскою / плейсхолдером `+380` (обов'язкове поле)
-- **Терміни старту:**
-  - "Якнайшвидше (протягом 1-2 тижнів)"
-  - "Протягом місяця"
-  - "Поки просто прицінююся"
-- Кнопка: **«Розрахувати кошторис»**
-
-### Крок 6: Екран успіху (Calculation Result)
-- Показ розрахованої фінальної суми (отриманої з відповіді n8n Webhook)
-- Повідомлення: *"Кошторис надіслано вам у чат з ботом. Наш майстер зв'яжеться з вами за номером [телефон]."*
-- Кнопка **«Закрити»** (`Telegram.WebApp.close()`)
+## 3. Критерії приймання та перевірка (Verification)
+1. Команда `npm run build` проходить без помилок компіляції та генерує хешовані файли у папку `dist/assets/`.
+2. Додаток запускається локально (`npm run dev`) без помилок у консолі браузера.
+3. Усі зміни мають бути атомарними — не зачіпати логіку кроків квізу та стилі карток.
 
 ---
 
-## 5. Контракт відправки на n8n Webhook
-Метод: `POST`  
-URL: береться з `import.meta.env.VITE_N8N_WEBHOOK_URL`  
-Header: `Content-Type: application/json`
-
-**Payload:**
-```json
-{
-  "user": {
-    "id": 8607080614,
-    "username": "client_username",
-    "first_name": "Ім'я"
-  },
-  "quiz": {
-    "repair_type": "capital",
-    "property_type": "secondary",
-    "area_m2": 65,
-    "addons": ["electric_plumbing", "materials_delivery"],
-    "start_date": "asap"
-  },
-  "contact": {
-    "name": "Іван",
-    "phone": "+380501234567"
-  }
-}
-```
-
----
-
-## 6. Чекліст підключення до бота через Cloudflare Tunnel
-1. Запустити локальний сервер: `npm run dev` (порт 5173).
-2. Запустити тунель: `cloudflared tunnel --url http://localhost:5173`.
-3. Отримати HTTPS URL (наприклад: `https://something.trycloudflare.com`).
-4. Налаштувати кнопку в `@BotFather`:
-   - Надіслати команду `/setmenubutton`.
-   - Обрати бота `@costcalculatortest1_bot`.
-   - Вказати отриманий HTTPS URL тунелю.
-   - Вказати текст кнопки: `🧮 Розрахувати ремонт`.
-5. Відкрити бота в Telegram — кнопка з'явиться в лівому нижньому кутку біля поля вводу.
+## 4. Фіксація змін
+Після виконання та верифікації надати звіт та команду:
+`git add . && git commit -m "feat(hardening): apply anti-cache headers, chunk hashing and viewport protection" && git push origin main`

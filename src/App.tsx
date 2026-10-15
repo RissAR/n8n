@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { ArrowLeft, ArrowRight, Wrench, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Wrench, ShieldCheck, Crown, Calculator } from 'lucide-react';
 import { ProgressBar } from './components/ProgressBar';
 import { Step1RepairType } from './components/Step1RepairType';
 import { Step2PropertyType } from './components/Step2PropertyType';
@@ -7,6 +7,7 @@ import { Step3Area } from './components/Step3Area';
 import { Step4Addons } from './components/Step4Addons';
 import { Step5Contact } from './components/Step5Contact';
 import { Step6Success } from './components/Step6Success';
+import { AdminDashboard } from './components/AdminDashboard';
 import {
   AddonKey,
   PropertyType,
@@ -16,7 +17,9 @@ import {
   WebhookPayload,
   WebhookResponse,
 } from './types/quiz';
+import { TelegramUser } from './types/telegram';
 import { calculateEstimate } from './utils/calculator';
+import { checkIsAdmin, ADMIN_USER_ID } from './utils/auth';
 import {
   getTelegramUser,
   getTelegramWebApp,
@@ -27,6 +30,8 @@ import {
 
 export const App: React.FC = () => {
   // 1. State hooks declared unconditionally at the very top
+  const [activeTab, setActiveTab] = useState<'quiz' | 'admin'>('quiz');
+  const [tgUser, setTgUser] = useState<TelegramUser | undefined>(undefined);
   const [step, setStep] = useState<number>(1);
   const [repairType, setRepairType] = useState<RepairType>('cosmetic');
   const [propertyType, setPropertyType] = useState<PropertyType>('new');
@@ -40,6 +45,14 @@ export const App: React.FC = () => {
   const [finalFormatted, setFinalFormatted] = useState<string>('');
 
   // 2. Computed values
+  const isAdmin = useMemo(() => {
+    return checkIsAdmin(tgUser);
+  }, [tgUser]);
+
+  const effectiveUserId = useMemo(() => {
+    return tgUser?.id || ADMIN_USER_ID;
+  }, [tgUser]);
+
   const estimate = useMemo(() => {
     return calculateEstimate(repairType, propertyType, areaM2, addons);
   }, [repairType, propertyType, areaM2, addons]);
@@ -84,12 +97,20 @@ export const App: React.FC = () => {
     setFinalFormatted('');
   }, []);
 
+  const handleTabChange = useCallback((tab: 'quiz' | 'admin') => {
+    hapticImpact('light');
+    setActiveTab(tab);
+  }, []);
+
   // 4. Initialize Telegram WebApp on mount
   useEffect(() => {
     initTelegram();
-    const tgUser = getTelegramUser();
-    if (tgUser?.first_name) {
-      setName(tgUser.first_name);
+    const user = getTelegramUser();
+    if (user) {
+      setTgUser(user);
+      if (user.first_name) {
+        setName(user.first_name);
+      }
     }
   }, []);
 
@@ -99,7 +120,20 @@ export const App: React.FC = () => {
     if (!tg?.BackButton) return;
 
     try {
-      if (step > 1 && step < 6) {
+      if (activeTab === 'admin') {
+        tg.BackButton?.show?.();
+        const onBackToQuiz = () => {
+          handleTabChange('quiz');
+        };
+        tg.BackButton?.onClick?.(onBackToQuiz);
+        return () => {
+          try {
+            tg.BackButton?.offClick?.(onBackToQuiz);
+          } catch {
+            // Ignore
+          }
+        };
+      } else if (step > 1 && step < 6) {
         tg.BackButton?.show?.();
         const onBack = () => {
           handlePrevStep();
@@ -118,16 +152,15 @@ export const App: React.FC = () => {
     } catch (e) {
       console.warn('Telegram BackButton warning:', e);
     }
-  }, [step, handlePrevStep]);
+  }, [activeTab, step, handlePrevStep, handleTabChange]);
 
   // 6. Submit calculation payload to n8n Webhook
   const handleSubmit = async () => {
     setIsLoading(true);
     setErrorMessage(null);
 
-    const tgUser = getTelegramUser();
     const webhookUrl =
-      import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook-test/quiz-calculator';
+      import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://quizleads.app.n8n.cloud/webhook/quiz-calculator';
 
     const payload: WebhookPayload = {
       user: {
@@ -170,7 +203,6 @@ export const App: React.FC = () => {
     } catch (err) {
       console.warn('Webhook request failed, falling back to local calculation:', err);
       // Fallback: If n8n is offline or unreachable in dev mode, still show calculation
-      // and notify user that result is calculated locally.
       setFinalFormatted(estimate.totalFormatted);
       hapticNotification('warning');
       setStep(6);
@@ -182,7 +214,7 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#121518] text-[#F3F4F6] flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 pb-8 sm:py-6">
       {/* Top Header */}
-      <header className="mb-4">
+      <header className="mb-3">
         <div className="flex items-center justify-between pb-3 border-b border-[#2D343B]">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#D97706] to-[#F59E0B] flex items-center justify-center text-white shadow-sm">
@@ -202,67 +234,104 @@ export const App: React.FC = () => {
             <span>Точний прайс</span>
           </div>
         </div>
+
+        {/* RBAC Admin Tab Switcher: Only rendered for Admin */}
+        {isAdmin && (
+          <div className="mt-3 p-1 bg-[#1A1F24] border border-[#2D343B] rounded-xl flex items-center gap-1 shadow-sm">
+            <button
+              type="button"
+              onClick={() => handleTabChange('quiz')}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'quiz'
+                  ? 'bg-gradient-to-r from-[#D97706] to-[#B45309] text-white shadow-sm'
+                  : 'text-[#9CA3AF] hover:text-[#F3F4F6]'
+              }`}
+            >
+              <Calculator className="w-3.5 h-3.5" />
+              <span>Квіз-калькулятор</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleTabChange('admin')}
+              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'admin'
+                  ? 'bg-gradient-to-r from-[#D97706] to-[#B45309] text-white shadow-sm'
+                  : 'text-[#9CA3AF] hover:text-[#F3F4F6]'
+              }`}
+            >
+              <Crown className="w-3.5 h-3.5 text-[#FBBF24]" />
+              <span>Заявки CRM</span>
+            </button>
+          </div>
+        )}
       </header>
 
-      {/* Main Form Body */}
+      {/* Main Content Body */}
       <main className="flex-1 flex flex-col justify-start">
-        {step < 6 && (
-          <ProgressBar currentStep={step} totalSteps={5} />
-        )}
+        {isAdmin && activeTab === 'admin' ? (
+          <AdminDashboard currentUserId={effectiveUserId} />
+        ) : (
+          <>
+            {step < 6 && (
+              <ProgressBar currentStep={step} totalSteps={5} />
+            )}
 
-        {step === 1 && (
-          <Step1RepairType
-            value={repairType}
-            onChange={(val) => setRepairType(val)}
-          />
-        )}
+            {step === 1 && (
+              <Step1RepairType
+                value={repairType}
+                onChange={(val) => setRepairType(val)}
+              />
+            )}
 
-        {step === 2 && (
-          <Step2PropertyType
-            value={propertyType}
-            onChange={(val) => setPropertyType(val)}
-          />
-        )}
+            {step === 2 && (
+              <Step2PropertyType
+                value={propertyType}
+                onChange={(val) => setPropertyType(val)}
+              />
+            )}
 
-        {step === 3 && (
-          <Step3Area
-            value={areaM2}
-            onChange={(val) => setAreaM2(val)}
-          />
-        )}
+            {step === 3 && (
+              <Step3Area
+                value={areaM2}
+                onChange={(val) => setAreaM2(val)}
+              />
+            )}
 
-        {step === 4 && (
-          <Step4Addons
-            value={addons}
-            onChange={(val) => setAddons(val)}
-          />
-        )}
+            {step === 4 && (
+              <Step4Addons
+                value={addons}
+                onChange={(val) => setAddons(val)}
+              />
+            )}
 
-        {step === 5 && (
-          <Step5Contact
-            name={name}
-            phone={phone}
-            startDate={startDate}
-            onNameChange={setName}
-            onPhoneChange={setPhone}
-            onStartDateChange={setStartDate}
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-            errorMessage={errorMessage}
-          />
-        )}
+            {step === 5 && (
+              <Step5Contact
+                name={name}
+                phone={phone}
+                startDate={startDate}
+                onNameChange={setName}
+                onPhoneChange={setPhone}
+                onStartDateChange={setStartDate}
+                onSubmit={handleSubmit}
+                isLoading={isLoading}
+                errorMessage={errorMessage}
+              />
+            )}
 
-        {step === 6 && (
-          <Step6Success
-            finalFormatted={finalFormatted}
-            quizState={quizState}
-            onReset={handleReset}
-          />
+            {step === 6 && (
+              <Step6Success
+                finalFormatted={finalFormatted}
+                quizState={quizState}
+                onReset={handleReset}
+              />
+            )}
+          </>
         )}
       </main>
 
-      {/* Bottom Sticky / Bar for Steps 1 - 4 */}
-      {step < 5 && (
+      {/* Bottom Sticky / Bar for Steps 1 - 4 (Only in Quiz view) */}
+      {(!isAdmin || activeTab === 'quiz') && step < 5 && (
         <footer className="sticky bottom-0 pt-4 pb-2 bg-[#121518]/95 backdrop-blur-md border-t border-[#2D343B]/80 mt-6 z-10">
           <div className="flex items-center justify-between gap-3">
             {/* Previous Step Button */}

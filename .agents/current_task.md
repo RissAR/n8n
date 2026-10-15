@@ -1,66 +1,42 @@
-# CURRENT TASK: КРОК 1 — Фундамент стабільності (Anti-Cache & Hardening First)
+# CURRENT TASK: КРОК 2 — Двосторонній Бот та Інтерактивна Адмінка в n8n (v2)
 
 ## 1. Мета задачі
-Ліквідувати ризики «білого екрана» та агресивного кешування Telegram Webview на iOS/Android/Desktop. Гарантувати, що будь-яка правка коду одразу потрапляє до користувача, чанки файлів мають унікальні хеші, а додаток надійно захищений від зуму та небажаних жестів браузера.
+Перетворити n8n на повноцінний бекенд для Telegram-бота:
+1. Автоматична обробка команди `/start`: надсилання привітання з Inline-кнопкою відкриття Mini App.
+2. Інтерактивна адмін-панель: у кожну картку ліда вшивається Inline-клавіатура дій (`[ 📞 Взяв у роботу ]`, `[ 📐 Замір ]`, `[ 🤝 Угода ]`, `[ ❌ Відхилено ]`).
+3. Обробка натискань (Callback Query): миттєвий спливаючий тост у Telegram та оновлення картки ліда (`editMessageText`) із фіксацією часу та імені адміністратора.
 
 ---
 
-## 2. Перелік завдань та файлів для модифікації
-
-### 1) Оновлення `index.html` (Anti-Cache мета-теги та захист Viewport)
-- **Файл:** `index.html`
-- **Вимоги:**
-  - Додати HTTP-заголовки заборони кешування в `<head>`:
-    ```html
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    ```
-  - Налаштувати жорсткий мобільний `viewport`, адаптований під Telegram WebApp (запобігає подвійному тапу, випадковому зумуванню та враховує «чубчик» на iPhone):
-    ```html
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    ```
-
-### 2) Налаштування хешування бандла у `vite.config.ts`
-- **Файл:** `vite.config.ts`
-- **Вимоги:**
-  - Додати конфігурацію `build.rollupOptions.output` із примусовим хешуванням чанків:
-    ```typescript
-    build: {
-      rollupOptions: {
-        output: {
-          entryFileNames: 'assets/[name].[hash].js',
-          chunkFileNames: 'assets/[name].[hash].js',
-          assetFileNames: 'assets/[name].[hash].[ext]',
-        },
-      },
-    },
-    ```
-  - Зберегти налаштування `server: { host: true, port: 5173, allowedHosts: true }`.
-
-### 3) Створення файлу версіонування `src/constants/version.ts`
-- **Файл:** `src/constants/version.ts`
-- **Вимоги:**
-  - Експортувати константу версії:
-    ```typescript
-    export const APP_VERSION = '1.0.0';
-    ```
-  - У `src/main.tsx` при ініціалізації виводити версію у консоль: `console.log('🚀 TMA Quiz Version:', APP_VERSION);`.
-
-### 4) Відмовостійкість у `src/utils/telegram.ts`
-- **Файл:** `src/utils/telegram.ts`
-- **Вимоги:**
-  - Перевірити всі методи взаємодії з `window.Telegram.WebApp`. Якщо додаток відкрито у звичайному браузері (поза Telegram), методи `HapticFeedback`, `setHeaderColor`, `BackButton` тощо мають безпечно ігноруватися або логуватися через optional chaining (`?.`), не викликаючи падіння застосунку (Uncaught TypeError).
+## 2. Підготовлений файл воркфлоу
+- **Шлях:** `n8n_workflows/quiz_calculator_workflow_v2.json`
+- **Нові гілки:**
+  - `Telegram Bot Trigger` — слухає оновлення бота (повідомлення та кліки по інлайн-кнопках).
+  - `Розподіл подій` — фільтрує `/start` від натискань кнопок `status:`.
+  - `Привітання /start з кнопкою TMA` — надсилає вітальну листівку з кнопкою запуску Mini App.
+  - `Парсинг натискання кнопки` — витягує дію, статус та телефон клієнта.
+  - `Сповіщення в Telegram (Toast)` — надсилає `answerCallbackQuery`.
+  - `Оновлення картки в чаті Адміна` — викликає `editMessageText` із додаванням плашки оновлення.
 
 ---
 
-## 3. Критерії приймання та перевірка (Verification)
-1. Команда `npm run build` проходить без помилок компіляції та генерує хешовані файли у папку `dist/assets/`.
-2. Додаток запускається локально (`npm run dev`) без помилок у консолі браузера.
-3. Усі зміни мають бути атомарними — не зачіпати логіку кроків квізу та стилі карток.
+## 3. Чекліст підключення в n8n Cloud
+1. Відкрити **n8n Cloud** ➔ створити новий або відкрити існуючий воркфлоу.
+2. Меню три крапки `...` ➔ **Import from File** ➔ обрати `n8n_workflows/quiz_calculator_workflow_v2.json` (або `Ctrl+V` на полотно).
+3. Перевірити креденшели:
+   - Нода **"Запис у Google Таблицю"**: обрати ваш `Google Sheets OAuth2 API`.
+   - Нода **"Telegram Bot Trigger"**: обрати або створити `Telegram API` Credential із токеном:
+     `8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c`
+4. У правому верхньому кутку натиснути перемикач **`Publish`** (активувати воркфлоу).
 
 ---
 
-## 4. Фіксація змін
-Після виконання та верифікації надати звіт та команду:
-`git add . && git commit -m "feat(hardening): apply anti-cache headers, chunk hashing and viewport protection" && git push origin main`
+## 4. Верифікація роботи (Acceptance Test)
+1. **Тест команди `/start`:**
+   - Надішліть боту `@costcalculatortest1_bot` команду `/start`.
+   - Бот повинен миттєво відповісти привітанням та показати велику кнопку `[ 🧮 Відкрити калькулятор ремонту ]`.
+2. **Тест інтерактивних кнопок адміна:**
+   - Відкрийте Mini App через кнопку бота, пройдіть квіз та надішліть заявку.
+   - У чат адміна надійде картка ліда з 4 кнопками.
+   - Натисніть кнопку `[ 📞 Взяв у роботу ]`.
+   - **Результат:** Зверху екрана з'явиться зелений тост «✅ Статус оновлено на: 📞 Взяв у роботу», а саме повідомлення картки оновиться наживо з поміткою, хто і о котрій годині взяв лід.

@@ -1,0 +1,340 @@
+{
+  "name": "TMA Quiz Calculator & Lead Generation v2 (Interactive CRM)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quiz-calculator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook TMA",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "tma-quiz-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract payload from Webhook\nconst body = $input.first().json.body || $input.first().json;\n\n// 2. Extract inputs with defaults\nconst repairType = body.quiz?.repair_type || 'cosmetic';\nconst propertyType = body.quiz?.property_type || 'new';\nconst areaM2 = Number(body.quiz?.area_m2) || 50;\nconst addons = Array.isArray(body.quiz?.addons) ? body.quiz.addons : [];\n\n// 3. Tariffs & Calculation Matrix\nconst baseRates = {\n  cosmetic: 2500,\n  capital: 5000,\n  designer: 8500\n};\nconst rateTitles = {\n  cosmetic: 'Косметичний (2 500 грн/м²)',\n  capital: 'Капітальний (5 000 грн/м²)',\n  designer: 'Дизайнерський (8 500 грн/м²)'\n};\n\nconst propMultipliers = {\n  new: 1.0,\n  secondary: 1.25\n};\nconst propTitles = {\n  new: 'Новобудова (x1.0)',\n  secondary: 'Вторинне житло (x1.25)'\n};\n\nconst addonPrices = {\n  design_project: { title: 'Дизайн-проєкт', price: 15000 },\n  electric_plumbing: { title: 'Сантехніка та електрика', price: 25000 },\n  materials_delivery: { title: 'Закупівля та доставка матеріалів', price: 8000 }\n};\n\nconst baseRate = baseRates[repairType] || 2500;\nconst multiplier = propMultipliers[propertyType] || 1.0;\n\nlet addonsTotal = 0;\nconst addonsNames = [];\naddons.forEach(key => {\n  if (addonPrices[key]) {\n    addonsTotal += addonPrices[key].price;\n    addonsNames.push(`${addonPrices[key].title} (+${addonPrices[key].price.toLocaleString('uk-UA')} грн)`);\n  }\n});\n\nconst baseCost = Math.round(areaM2 * baseRate * multiplier);\nconst totalAmount = baseCost + addonsTotal;\n\n// 4. Client & Contact Metadata\nconst userId = body.user?.id ? String(body.user.id) : '';\nconst username = body.user?.username ? `@${body.user.username}` : 'Немає юзернейма';\nconst clientName = body.contact?.name || body.user?.first_name || 'Гість';\nconst clientPhone = body.contact?.phone || 'Не вказано';\n\n// Kyiv Timestamp\nconst now = new Date();\nconst timestamp = now.toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' });\n\nreturn [{\n  json: {\n    timestamp,\n    userId,\n    username,\n    clientName,\n    clientPhone,\n    repairTypeTitle: rateTitles[repairType] || repairType,\n    propertyTypeTitle: propTitles[propertyType] || propertyType,\n    areaM2,\n    addonsTitles: addonsNames.length > 0 ? addonsNames.join(', ') : 'Без додаткових опцій',\n    baseCost,\n    addonsTotal,\n    totalAmount,\n    totalFormatted: totalAmount.toLocaleString('uk-UA') + ' грн',\n    status: 'Новий лід'\n  }\n}];"
+      },
+      "id": "node-code-calculate",
+      "name": "Розрахунок кошторису",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата/Час": "={{ $json.timestamp }}",
+            "User ID": "={{ $json.userId }}",
+            "Username": "={{ $json.username }}",
+            "Ім'я": "={{ $json.clientName }}",
+            "Телефон": "={{ $json.clientPhone }}",
+            "Тип ремонту": "={{ $json.repairTypeTitle }}",
+            "Тип житла": "={{ $json.propertyTypeTitle }}",
+            "Площа (м²)": "={{ $json.areaM2 }}",
+            "Додаткові опції": "={{ $json.addonsTitles }}",
+            "Розрахунок (грн)": "={{ $json.totalFormatted }}",
+            "Статус": "={{ $json.status }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-google-sheets",
+      "name": "Запис у Google Таблицю",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": 8607080614,\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>НОВИЙ РОЗРАХУНОК РЕМОНТУ (TMA)</b>\\n\\n👤 <b>Клієнт:</b> {{ $json[\"Ім'я\"] }} ({{ $json.Username }})\\n📞 <b>Телефон:</b> <code>{{ $json['Телефон'] }}</code>\\n🆔 <b>User ID:</b> <code>{{ $json['User ID'] }}</code>\\n\\n📐 <b>Параметри об'єкта:</b>\\n• <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\\n• <b>Тип житла:</b> {{ $json['Тип житла'] }}\\n• <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\\n• <b>Додаткові опції:</b> {{ $json['Додаткові опції'] }}\\n\\n💰 <b>Розрахована вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\\n🕒 <b>Час:</b> {{ $json['Дата/Час'] }}\\n\\n📌 <b>Статус заявки:</b> 🟡 <i>Новий лід</i>\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        { \"text\": \"📞 Взяв у роботу\", \"callback_data\": \"status:in_progress:{{ $json['Телефон'] }}\" },\n        { \"text\": \"📐 Замір призначено\", \"callback_data\": \"status:measuring:{{ $json['Телефон'] }}\" }\n      ],\n      [\n        { \"text\": \"🤝 Угода\", \"callback_data\": \"status:deal:{{ $json['Телефон'] }}\" },\n        { \"text\": \"❌ Відхилено\", \"callback_data\": \"status:rejected:{{ $json['Телефон'] }}\" }\n      ]\n    ]\n  }\n}"
+      },
+      "id": "node-telegram-admin-interactive",
+      "name": "Сповіщення Адміну (з кнопками)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json['User ID'] }}",
+        "text": "=👋 <b>Дякуємо, {{ $json[\"Ім'я\"] }}!</b>\n\nВаш попередній розрахунок вартості ремонту успішно сформовано:\n\n📐 <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\n🔨 <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\n💰 <b>Орієнтовна вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\n\nНаш майстер-кошторисник зв'яжеться з вами найближчим часом за номером <code>{{ $json['Телефон'] }}</code> для узгодження деталей та безкоштовного заміру.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "node-telegram-client",
+      "name": "Чек клієнту в Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, totalFormatted: $json['Розрахунок (грн)'], totalAmount: $node['Розрахунок кошторису'].json.totalAmount, timestamp: $json['Дата/Час'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-webhook",
+      "name": "Відповідь у TMA",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 300]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-telegram-trigger",
+      "name": "Telegram Bot Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 640]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message?.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.callback_query?.data }}",
+                    "rightValue": "status:",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-switch-event",
+      "name": "Розподіл подій (/start чи Кнопка)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [480, 640]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>Вітаємо у будівельній команді «Ремонт Під Ключ»!</b>\\n\\nМи виконуємо якісний ремонт квартир під ключ та окремих приміщень у Києві та області.\\n\\n📊 <b>Дізнайтеся точну вартість робіт за 1 хвилину:</b>\\nСкористайтеся нашим швидким онлайн-калькулятором — оберіть параметри та отримайте детальний попередній кошторис.\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"🧮 Відкрити калькулятор ремонту\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
+      },
+      "id": "node-send-welcome",
+      "name": "Привітання /start з кнопкою TMA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 540]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse callback query data: e.g. status:in_progress:+380501234567\nconst cb = $input.first().json.callback_query;\nconst parts = (cb?.data || '').split(':');\nconst statusCode = parts[1] || 'in_progress';\nconst clientPhone = parts[2] || '';\n\nconst statusTitles = {\n  in_progress: '📞 Взяв у роботу',\n  measuring: '📐 Призначено замір',\n  deal: '🤝 Укладено договір',\n  rejected: '❌ Відхилено'\n};\n\nconst newStatusText = statusTitles[statusCode] || statusCode;\nconst adminName = cb?.from?.first_name || 'Адмін';\nconst originalText = cb?.message?.text || '';\nconst messageId = cb?.message?.message_id;\nconst chatId = cb?.message?.chat?.id;\nconst callbackId = cb?.id;\n\nconst now = new Date();\nconst timeStr = now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit' });\n\nreturn [{\n  json: {\n    callbackId,\n    chatId,\n    messageId,\n    clientPhone,\n    newStatusText,\n    adminName,\n    timeStr,\n    updatedCardText: originalText + `\\n\\n⚡ <b>ОНОВЛЕННЯ:</b> ${newStatusText}\\n👤 <b>Обробив:</b> ${adminName} о ${timeStr}`\n  }\n}];"
+      },
+      "id": "node-parse-callback",
+      "name": "Парсинг натискання кнопки",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 740]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/answerCallbackQuery",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"callback_query_id\": \"{{ $json.callbackId }}\",\n  \"text\": \"✅ Статус оновлено на: {{ $json.newStatusText }}\",\n  \"show_alert\": false\n}"
+      },
+      "id": "node-answer-callback",
+      "name": "Сповіщення в Telegram (Toast)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1000, 740]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/editMessageText",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ $json.chatId }},\n  \"message_id\": {{ $json.messageId }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"{{ $json.updatedCardText.replace(/\\n/g, '\\\\n') }}\"\n}"
+      },
+      "id": "node-edit-admin-message",
+      "name": "Оновлення картки в чаті Адміна",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1240, 740]
+    }
+  ],
+  "connections": {
+    "Webhook TMA": {
+      "main": [
+        [
+          {
+            "node": "Розрахунок кошторису",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Розрахунок кошторису": {
+      "main": [
+        [
+          {
+            "node": "Запис у Google Таблицю",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Запис у Google Таблицю": {
+      "main": [
+        [
+          {
+            "node": "Сповіщення Адміну (з кнопками)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сповіщення Адміну (з кнопками)": {
+      "main": [
+        [
+          {
+            "node": "Чек клієнту в Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Чек клієнту в Telegram": {
+      "main": [
+        [
+          {
+            "node": "Відповідь у TMA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Bot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Розподіл подій (/start чи Кнопка)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Розподіл подій (/start чи Кнопка)": {
+      "main": [
+        [
+          {
+            "node": "Привітання /start з кнопкою TMA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Парсинг натискання кнопки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Парсинг натискання кнопки": {
+      "main": [
+        [
+          {
+            "node": "Сповіщення в Telegram (Toast)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сповіщення в Telegram (Toast)": {
+      "main": [
+        [
+          {
+            "node": "Оновлення картки в чаті Адміна",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

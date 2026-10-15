@@ -1,5 +1,5 @@
 import React from 'react';
-import { Palette, Zap, Truck, Check } from 'lucide-react';
+import { Hammer, ShoppingCart, Compass, Check } from 'lucide-react';
 import { AddonKey } from '../types/quiz';
 import { ADDONS_DATA, formatUAH } from '../utils/calculator';
 import { hapticImpact } from '../utils/telegram';
@@ -10,9 +10,9 @@ interface Step4Props {
 }
 
 const ICONS: Record<AddonKey, React.ReactNode> = {
-  design_project: <Palette className="w-5 h-5" />,
-  electric_plumbing: <Zap className="w-5 h-5" />,
-  materials_delivery: <Truck className="w-5 h-5" />,
+  dismantling: <Hammer className="w-5 h-5" />,
+  materials_procurement: <ShoppingCart className="w-5 h-5" />,
+  design_supervision: <Compass className="w-5 h-5" />,
 };
 
 export const Step4Addons: React.FC<Step4Props> = ({ value, onChange }) => {
@@ -25,16 +25,16 @@ export const Step4Addons: React.FC<Step4Props> = ({ value, onChange }) => {
     }
   };
 
-  const options: AddonKey[] = ['design_project', 'electric_plumbing', 'materials_delivery'];
+  const options: AddonKey[] = ['dismantling', 'materials_procurement', 'design_supervision'];
 
   return (
     <div className="space-y-4">
       <div className="mb-2">
         <h2 className="text-2xl font-bold text-white tracking-tight">
-          Додаткові опції
+          Додаткові послуги в Луцьку
         </h2>
         <p className="text-xs text-neutral-400 mt-1">
-          Оберіть необхідні супутні послуги (можна обрати кілька або пропустити)
+          Оберіть необхідні супутні послуги під ключ від нашої бригади
         </p>
       </div>
 

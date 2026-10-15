@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ArrowLeft, ArrowRight, Wrench, ShieldCheck, Crown, Calculator } from 'lucide-react';
 import { ProgressBar } from './components/ProgressBar';
-import { Step1RepairType } from './components/Step1RepairType';
-import { Step2PropertyType } from './components/Step2PropertyType';
+import { Step1Scope } from './components/Step1Scope';
+import { Step2Detail } from './components/Step2Detail';
 import { Step3Area } from './components/Step3Area';
 import { Step4Addons } from './components/Step4Addons';
 import { Step5Contact } from './components/Step5Contact';
@@ -10,9 +10,13 @@ import { Step6Success } from './components/Step6Success';
 import { AdminDashboard } from './components/AdminDashboard';
 import {
   AddonKey,
+  EngineeringType,
+  LutskDistrict,
   PropertyType,
   QuizState,
+  RepairScope,
   RepairType,
+  RoomType,
   StartDateOption,
   WebhookPayload,
   WebhookResponse,
@@ -34,12 +38,16 @@ export const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'quiz' | 'admin'>('quiz');
   const [tgUser, setTgUser] = useState<TelegramUser | undefined>(undefined);
   const [step, setStep] = useState<number>(1);
+  const [scope, setScope] = useState<RepairScope>('whole_flat');
   const [repairType, setRepairType] = useState<RepairType>('cosmetic');
+  const [roomType, setRoomType] = useState<RoomType>('bathroom');
+  const [engineeringType, setEngineeringType] = useState<EngineeringType>('electric');
   const [propertyType, setPropertyType] = useState<PropertyType>('new');
   const [areaM2, setAreaM2] = useState<number>(50);
   const [addons, setAddons] = useState<AddonKey[]>([]);
   const [name, setName] = useState<string>('');
   const [phone, setPhone] = useState<string>('+380');
+  const [district, setDistrict] = useState<LutskDistrict>('center');
   const [startDate, setStartDate] = useState<StartDateOption>('asap');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -55,20 +63,46 @@ export const App: React.FC = () => {
   }, [tgUser]);
 
   const estimate = useMemo(() => {
-    return calculateEstimate(repairType, propertyType, areaM2, addons);
-  }, [repairType, propertyType, areaM2, addons]);
+    return calculateEstimate(
+      scope,
+      repairType,
+      roomType,
+      engineeringType,
+      propertyType,
+      areaM2,
+      addons
+    );
+  }, [scope, repairType, roomType, engineeringType, propertyType, areaM2, addons]);
 
   const quizState: QuizState = useMemo(() => {
     return {
+      scope,
       repairType,
+      roomType,
+      engineeringType,
       propertyType,
       areaM2,
       addons,
-      name,
-      phone,
-      startDate,
+      contact: {
+        name,
+        phone,
+        district,
+        startDate,
+      },
     };
-  }, [repairType, propertyType, areaM2, addons, name, phone, startDate]);
+  }, [
+    scope,
+    repairType,
+    roomType,
+    engineeringType,
+    propertyType,
+    areaM2,
+    addons,
+    name,
+    phone,
+    district,
+    startDate,
+  ]);
 
   // 3. Navigation handlers
   const handlePrevStep = useCallback(() => {
@@ -90,10 +124,14 @@ export const App: React.FC = () => {
   const handleReset = useCallback(() => {
     hapticImpact('light');
     setStep(1);
+    setScope('whole_flat');
     setRepairType('cosmetic');
+    setRoomType('bathroom');
+    setEngineeringType('electric');
     setPropertyType('new');
     setAreaM2(50);
     setAddons([]);
+    setDistrict('center');
     setErrorMessage(null);
     setFinalFormatted('');
   }, []);
@@ -142,15 +180,20 @@ export const App: React.FC = () => {
         first_name: name || tgUser?.first_name || 'Гість',
       },
       quiz: {
+        scope,
         repair_type: repairType,
+        room_type: roomType,
+        engineering_type: engineeringType,
         property_type: propertyType,
         area_m2: areaM2,
-        addons: addons,
+        addons,
+        district,
         start_date: startDate,
       },
       contact: {
         name: name || 'Гість',
-        phone: phone,
+        phone,
+        district,
       },
     };
 
@@ -195,16 +238,16 @@ export const App: React.FC = () => {
             </div>
             <div>
               <h1 className="text-sm font-bold tracking-tight text-white">
-                Калькулятор ремонту
+                РемБригада Луцьк
               </h1>
               <p className="text-[11px] text-neutral-400">
-                Розрахунок за 1 хвилину
+                Прямі ціни без посередників
               </p>
             </div>
           </div>
           <div className="flex items-center gap-1 text-[11px] text-neutral-400 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1 rounded-full backdrop-blur-md">
             <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-            <span>Точний прайс</span>
+            <span>Луцьк та передмістя</span>
           </div>
         </div>
 
@@ -251,21 +294,31 @@ export const App: React.FC = () => {
             )}
 
             {step === 1 && (
-              <Step1RepairType
-                value={repairType}
-                onChange={(val) => setRepairType(val)}
+              <Step1Scope
+                value={scope}
+                onChange={(val) => setScope(val)}
               />
             )}
 
             {step === 2 && (
-              <Step2PropertyType
-                value={propertyType}
-                onChange={(val) => setPropertyType(val)}
+              <Step2Detail
+                scope={scope}
+                repairType={repairType}
+                roomType={roomType}
+                engineeringType={engineeringType}
+                propertyType={propertyType}
+                onRepairTypeChange={setRepairType}
+                onRoomTypeChange={setRoomType}
+                onEngineeringTypeChange={setEngineeringType}
+                onPropertyTypeChange={setPropertyType}
               />
             )}
 
             {step === 3 && (
               <Step3Area
+                scope={scope}
+                roomType={roomType}
+                engineeringType={engineeringType}
                 value={areaM2}
                 onChange={(val) => setAreaM2(val)}
               />
@@ -282,9 +335,11 @@ export const App: React.FC = () => {
               <Step5Contact
                 name={name}
                 phone={phone}
+                district={district}
                 startDate={startDate}
                 onNameChange={setName}
                 onPhoneChange={setPhone}
+                onDistrictChange={setDistrict}
                 onStartDateChange={setStartDate}
                 onSubmit={handleSubmit}
                 isLoading={isLoading}

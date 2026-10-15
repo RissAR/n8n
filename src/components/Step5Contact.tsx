@@ -1,14 +1,17 @@
 import React from 'react';
-import { User, Phone, Calendar, Loader2 } from 'lucide-react';
-import { StartDateOption } from '../types/quiz';
+import { User, Phone, MapPin, Calendar, Loader2, Sparkles } from 'lucide-react';
+import { LutskDistrict, StartDateOption } from '../types/quiz';
+import { DISTRICTS_DATA } from '../utils/calculator';
 import { hapticImpact } from '../utils/telegram';
 
 interface Step5Props {
   name: string;
   phone: string;
+  district: LutskDistrict;
   startDate: StartDateOption;
   onNameChange: (val: string) => void;
   onPhoneChange: (val: string) => void;
+  onDistrictChange: (val: LutskDistrict) => void;
   onStartDateChange: (val: StartDateOption) => void;
   onSubmit: () => void;
   isLoading: boolean;
@@ -35,7 +38,6 @@ export const formatUkrainianPhone = (input: string): string => {
     nationalDigits = allDigits;
   }
 
-  // Maximum 9 national digits (e.g. 50 123 45 67)
   nationalDigits = nationalDigits.slice(0, 9);
 
   if (nationalDigits.length === 0) {
@@ -56,9 +58,11 @@ export const formatUkrainianPhone = (input: string): string => {
 export const Step5Contact: React.FC<Step5Props> = ({
   name,
   phone,
+  district,
   startDate,
   onNameChange,
   onPhoneChange,
+  onDistrictChange,
   onStartDateChange,
   onSubmit,
   isLoading,
@@ -70,23 +74,29 @@ export const Step5Contact: React.FC<Step5Props> = ({
     onPhoneChange(formatted);
   };
 
+  const handleDistrictSelect = (d: LutskDistrict) => {
+    hapticImpact('light');
+    onDistrictChange(d);
+  };
+
   const handleStartDateSelect = (option: StartDateOption) => {
     hapticImpact('light');
     onStartDateChange(option);
   };
 
-  // 9 digits after country code 380
   const nationalDigits = phone.replace(/\D/g, '').replace(/^380/, '');
   const isPhoneValid = nationalDigits.length === 9;
 
+  const districtKeys: LutskDistrict[] = ['center', 'district_33_40', 'lpz', 'kovelska', 'suburb'];
+
   return (
     <div className="space-y-5">
-      <div className="mb-2">
+      <div>
         <h2 className="text-2xl font-bold text-white tracking-tight">
-          Контактні дані та терміни
+          Контактні дані та локація
         </h2>
         <p className="text-xs text-neutral-400 mt-1">
-          Куди надіслати детальний кошторис та коли плануєте розпочинати?
+          Куди виїхати для заміру та за яким номером узгодити кошторис
         </p>
       </div>
 
@@ -95,6 +105,14 @@ export const Step5Contact: React.FC<Step5Props> = ({
           {errorMessage}
         </div>
       )}
+
+      {/* Free Measurement Badge */}
+      <div className="p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-center gap-2.5">
+        <Sparkles className="w-4 h-4 text-amber-400 shrink-0" />
+        <span className="text-xs text-amber-300 font-medium leading-tight">
+          Безкоштовний виїзд виконроба Олега на замір по Луцьку та району
+        </span>
+      </div>
 
       {/* Name Input */}
       <div className="space-y-1.5">
@@ -145,11 +163,53 @@ export const Step5Contact: React.FC<Step5Props> = ({
         </div>
       </div>
 
+      {/* Lutsk District Selector */}
+      <div className="space-y-2 pt-1">
+        <label className="text-xs font-medium text-neutral-400 flex items-center gap-1.5">
+          <MapPin className="w-3.5 h-3.5 text-amber-400" />
+          Район об'єкта в Луцьку та передмісті
+        </label>
+        <div className="space-y-2">
+          {districtKeys.map((key) => {
+            const item = DISTRICTS_DATA[key];
+            const isSelected = district === key;
+
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => handleDistrictSelect(key)}
+                className={`w-full text-left p-3.5 rounded-2xl border text-xs font-medium transition-all active:scale-[0.985] flex items-center justify-between ${
+                  isSelected
+                    ? 'border-amber-500/40 bg-gradient-to-b from-amber-500/[0.12] to-amber-500/[0.02] text-white shadow-[0_0_16px_rgba(245,158,11,0.15)]'
+                    : 'bg-[#13161C]/60 backdrop-blur-lg border-white/[0.07] text-neutral-400 hover:text-white hover:border-white/[0.15]'
+                }`}
+              >
+                <div>
+                  <div className="font-semibold text-white text-xs">{item.title}</div>
+                  <div className="text-[11px] text-neutral-500 mt-0.5">{item.note}</div>
+                </div>
+
+                <div
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all shrink-0 ml-2 ${
+                    isSelected
+                      ? 'border-2 border-amber-400 bg-amber-500/10'
+                      : 'border-white/20 bg-white/[0.03]'
+                  }`}
+                >
+                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Start Date Selection */}
       <div className="space-y-2 pt-1">
         <label className="text-xs font-medium text-neutral-400 flex items-center gap-1.5">
           <Calendar className="w-3.5 h-3.5 text-amber-400" />
-          Коли плануєте розпочати ремонт?
+          Коли плануєте розпочати?
         </label>
         <div className="space-y-2">
           {START_DATE_OPTIONS.map((opt) => {

@@ -6,11 +6,11 @@ interface ProgressBarProps {
 }
 
 const STEP_TITLES = [
-  'Тип ремонту',
-  'Стан житла',
-  'Площа приміщення',
-  'Додаткові опції',
-  'Контактні дані',
+  'Формат робіт',
+  'Деталі робіт',
+  'Площа / Об\'єкт',
+  'Додаткові послуги',
+  'Контакти та локація',
 ];
 
 export const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, totalSteps }) => {

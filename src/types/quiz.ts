@@ -1,16 +1,26 @@
+export type RepairScope = 'whole_flat' | 'single_room' | 'engineering';
+export type RoomType = 'bathroom' | 'kitchen' | 'bedroom' | 'balcony';
+export type EngineeringType = 'electric' | 'plumbing' | 'tile';
 export type RepairType = 'cosmetic' | 'capital' | 'designer';
 export type PropertyType = 'new' | 'secondary';
-export type AddonKey = 'design_project' | 'electric_plumbing' | 'materials_delivery';
+export type LutskDistrict = 'center' | 'district_33_40' | 'lpz' | 'kovelska' | 'suburb';
+export type AddonKey = 'dismantling' | 'materials_procurement' | 'design_supervision';
 export type StartDateOption = 'asap' | 'month' | 'pricing';
 
 export interface QuizState {
+  scope: RepairScope;
   repairType: RepairType;
+  roomType: RoomType;
+  engineeringType: EngineeringType;
   propertyType: PropertyType;
   areaM2: number;
   addons: AddonKey[];
-  name: string;
-  phone: string;
-  startDate: StartDateOption;
+  contact: {
+    name: string;
+    phone: string;
+    district: LutskDistrict;
+    startDate?: StartDateOption;
+  };
 }
 
 export interface WebhookPayload {
@@ -20,15 +30,20 @@ export interface WebhookPayload {
     first_name: string;
   };
   quiz: {
+    scope: RepairScope;
     repair_type: RepairType;
+    room_type: RoomType;
+    engineering_type: EngineeringType;
     property_type: PropertyType;
     area_m2: number;
     addons: AddonKey[];
-    start_date: StartDateOption;
+    district: LutskDistrict;
+    start_date?: StartDateOption;
   };
   contact: {
     name: string;
     phone: string;
+    district: LutskDistrict;
   };
 }
 
@@ -41,10 +56,9 @@ export interface WebhookResponse {
 }
 
 export interface CalculationBreakdown {
-  baseRate: number;
-  multiplier: number;
   baseCost: number;
   addonsTotal: number;
   totalAmount: number;
   totalFormatted: string;
+  itemDescription?: string;
 }

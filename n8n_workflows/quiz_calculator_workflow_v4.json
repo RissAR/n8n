@@ -1,0 +1,492 @@
+{
+  "name": "TMA Quiz Calculator & CRM v4 (Lutsk Edition)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quiz-calculator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-quiz",
+      "name": "Webhook TMA (Квіз)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 240],
+      "webhookId": "tma-quiz-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract payload from Webhook\nconst body = $input.first().json.body || $input.first().json;\n\n// 2. Extract inputs with defaults for Lutsk\nconst scope = body.quiz?.scope || 'whole_flat'; // whole_flat | single_room | engineering\nconst propertyType = body.quiz?.property_type || 'new'; // new | secondary\nconst areaM2 = Number(body.quiz?.area_m2) || 50;\nconst addons = Array.isArray(body.quiz?.addons) ? body.quiz.addons : [];\nconst district = body.contact?.district || 'м. Луцьк';\n\n// 3. Tariffs & Calculation Matrix for Lutsk Market\nlet baseCost = 0;\nlet scopeTitle = '';\nlet detailTitle = '';\n\nif (scope === 'whole_flat') {\n  const repairType = body.quiz?.repair_type || 'capital';\n  const flatRates = {\n    cosmetic: { title: 'Косметичний під ключ (3 500 грн/м²)', rate: 3500 },\n    capital: { title: 'Капітальний під ключ (7 500 грн/м²)', rate: 7500 },\n    designer: { title: 'Дизайнерський преміум (13 500 грн/м²)', rate: 13500 }\n  };\n  const selected = flatRates[repairType] || flatRates.capital;\n  const multiplier = propertyType === 'secondary' ? 1.2 : 1.0;\n  baseCost = Math.round(areaM2 * selected.rate * multiplier);\n  scopeTitle = 'Вся квартира / Будинок';\n  detailTitle = `${selected.title} (${areaM2} м², ${propertyType === 'secondary' ? 'вторинка x1.2' : 'новобудова'})`;\n} else if (scope === 'single_room') {\n  const roomType = body.quiz?.room_type || 'bathroom';\n  const roomRates = {\n    bathroom: { title: 'Ванна кімната / Санвузол під ключ', cost: 25000 },\n    kitchen: { title: 'Кухня під ключ (комунікації + фартух)', cost: 18000 },\n    bedroom: { title: `Житлова кімната / Спальня (${areaM2} м²)`, cost: Math.round(areaM2 * 3500) },\n    balcony: { title: 'Балкон / Лоджія (утеплення + оздоблення)', cost: 14000 }\n  };\n  const selected = roomRates[roomType] || roomRates.bathroom;\n  baseCost = selected.cost;\n  scopeTitle = 'Окреме приміщення';\n  detailTitle = selected.title;\n} else if (scope === 'engineering') {\n  const engType = body.quiz?.engineering_type || 'electric';\n  const engRates = {\n    electric: { title: 'Повний електромонтаж (щиток, автомати, точки)', cost: 15000 },\n    plumbing: { title: 'Сантехніка під ключ (REHAU, інсталяція, фільтри)', cost: 12000 },\n    tile: { title: `Укладання керамограніту (${areaM2} м²)`, cost: Math.round(areaM2 * 600) }\n  };\n  const selected = engRates[engType] || engRates.electric;\n  baseCost = selected.cost;\n  scopeTitle = 'Спецмонтаж / Інженерія';\n  detailTitle = selected.title;\n}\n\n// Addons Matrix (Lutsk Edition)\nconst addonPrices = {\n  dismantling: { title: 'Демонтаж та вивіз будсміття по Луцьку', price: 6000 },\n  materials_procurement: { title: 'Закупівля матеріалів зі знижкою 20% (Епіцентр)', price: 4000 },\n  design_supervision: { title: '3D-візуалізація та розгортка комунікацій', price: 10000 }\n};\n\nlet addonsTotal = 0;\nconst addonsNames = [];\naddons.forEach(key => {\n  if (addonPrices[key]) {\n    addonsTotal += addonPrices[key].price;\n    addonsNames.push(`${addonPrices[key].title} (+${addonPrices[key].price.toLocaleString('uk-UA')} грн)`);\n  }\n});\n\nconst totalAmount = baseCost + addonsTotal;\n\n// 4. Client & Contact Metadata\nconst userId = body.user?.id ? String(body.user.id) : '';\nconst username = body.user?.username ? `@${body.user.username}` : 'Немає юзернейма';\nconst clientName = body.contact?.name || body.user?.first_name || 'Клієнт';\nconst clientPhone = body.contact?.phone || 'Не вказано';\n\n// Kyiv Timestamp\nconst now = new Date();\nconst timestamp = now.toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' });\n\nreturn [{\n  json: {\n    timestamp,\n    userId,\n    username,\n    clientName,\n    clientPhone,\n    district,\n    scopeTitle,\n    detailTitle,\n    areaM2,\n    addonsTitles: addonsNames.length > 0 ? addonsNames.join(', ') : 'Без додаткових опцій',\n    baseCost,\n    addonsTotal,\n    totalAmount,\n    totalFormatted: totalAmount.toLocaleString('uk-UA') + ' грн',\n    status: 'Новий лід'\n  }\n}];"
+      },
+      "id": "node-calc-quiz",
+      "name": "Розрахунок кошторису (Луцьк)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 240]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата/Час": "={{ $json.timestamp }}",
+            "User ID": "={{ $json.userId }}",
+            "Username": "={{ $json.username }}",
+            "Ім'я": "={{ $json.clientName }}",
+            "Телефон": "={{ $json.clientPhone }}",
+            "Тип ремонту": "={{ $json.scopeTitle }} ({{ $json.detailTitle }})",
+            "Тип житла": "={{ $json.district }}",
+            "Площа (м²)": "={{ $json.areaM2 }}",
+            "Додаткові опції": "={{ $json.addonsTitles }}",
+            "Розрахунок (грн)": "={{ $json.totalFormatted }}",
+            "Статус": "={{ $json.status }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-sheets-append",
+      "name": "Запис у Google Таблицю",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [680, 240]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": 8607080614,\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>НОВА ЗАЯВКА: РЕМБРИГАДА ЛУЦЬК</b>\\n\\n👤 <b>Клієнт:</b> {{ $json[\"Ім'я\"] }} ({{ $json.Username }})\\n📞 <b>Телефон:</b> <code>{{ $json['Телефон'] }}</code>\\n📍 <b>Локація / Район:</b> {{ $json.district }}\\n\\n📐 <b>Замовлення:</b>\\n• <b>Напрямок:</b> {{ $json.scopeTitle }}\\n• <b>Деталі:</b> {{ $json.detailTitle }}\\n• <b>Додаткові опції:</b> {{ $json.addonsTitles }}\\n\\n💰 <b>Попередній кошторис:</b> <b>{{ $json.totalFormatted }}</b>\\n🕒 <b>Час:</b> {{ $json.timestamp }}\\n\\n📌 <b>Статус:</b> 🟡 <i>Новий лід</i>\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        { \"text\": \"📞 Взяв у роботу\", \"callback_data\": \"status:in_progress:{{ $json['Телефон'] }}\" },\n        { \"text\": \"📐 Замір\", \"callback_data\": \"status:measuring:{{ $json['Телефон'] }}\" }\n      ],\n      [\n        { \"text\": \"🤝 Угода\", \"callback_data\": \"status:deal:{{ $json['Телефон'] }}\" },\n        { \"text\": \"❌ Відхилено\", \"callback_data\": \"status:rejected:{{ $json['Телефон'] }}\" }\n      ]\n    ]\n  }\n}"
+      },
+      "id": "node-alert-admin",
+      "name": "Сповіщення Адміну",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 140]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json['User ID'] }}",
+        "text": "=👋 <b>Дякуємо, {{ $json[\"Ім'я\"] }}!</b>\\n\\nВаш попередній розрахунок від бригади <b>«РемБригада Луцьк»</b> успішно сформовано:\\n\\n📐 <b>Послуга:</b> {{ $json.scopeTitle }} ({{ $json.detailTitle }})\\n💰 <b>Орієнтовна вартість робіт:</b> <b>{{ $json.totalFormatted }}</b>\\n📍 <b>Район:</b> {{ $json.district }}\\n\\nНаш виконроб Олег зв'яжеться з вами за номером <code>{{ $json['Телефон'] }}</code> для узгодження зручного часу безкоштовного заміру по Луцьку.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "node-alert-client",
+      "name": "Чек клієнту в Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1120, 140],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, totalFormatted: $json['Розрахунок (грн)'], totalAmount: $node['Розрахунок кошторису (Луцьк)'].json.totalAmount, timestamp: $json['Дата/Час'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-resp-quiz",
+      "name": "Відповідь у TMA",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1340, 240]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "admin-leads",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-admin-leads",
+      "name": "Webhook Admin (Отримати ліди)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 520],
+      "webhookId": "admin-leads-webhook"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ String($json.body?.userId || $json.userId) }}",
+              "rightValue": "8607080614",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "node-rbac-check",
+      "name": "RBAC Перевірка Адміна",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 520]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\"success\": false, \"error\": \"Доступ заборонено (403 Forbidden). Тільки для адміністратора.\"}",
+        "options": {
+          "responseCode": 403
+        }
+      },
+      "id": "node-resp-forbidden",
+      "name": "Відповідь 403 Forbidden",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [680, 640]
+    },
+    {
+      "parameters": {
+        "operation": "read",
+        "documentId": {
+          "__rl": true,
+          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "options": {}
+      },
+      "id": "node-sheets-read-leads",
+      "name": "Читання лідів з Sheets",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [680, 440]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map all read rows to a clean array of leads\nconst items = $input.all();\nconst leads = items.map((item, index) => {\n  const row = item.json;\n  return {\n    id: index + 1,\n    timestamp: row['Дата/Час'] || '',\n    userId: row['User ID'] || '',\n    username: row['Username'] || '',\n    name: row[\"Ім'я\"] || '',\n    phone: row['Телефон'] || '',\n    repairType: row['Тип ремонту'] || '',\n    propertyType: row['Тип житла'] || '',\n    areaM2: row['Площа (м²)'] || '',\n    addons: row['Додаткові опції'] || '',\n    total: row['Розрахунок (грн)'] || '',\n    status: row['Статус'] || 'Новий лід'\n  };\n}).reverse(); // Latest leads first\n\nreturn [{\n  json: {\n    success: true,\n    count: leads.length,\n    leads: leads\n  }\n}];"
+      },
+      "id": "node-aggregate-leads",
+      "name": "Форматування списку лідів",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [900, 440]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-resp-admin-leads",
+      "name": "Відповідь з лідами для TMA",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1120, 440]
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "callback_query"
+        ],
+        "additionalFields": {}
+      },
+      "id": "node-telegram-trigger",
+      "name": "Telegram Bot Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 840]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message?.text }}",
+                    "rightValue": "/start",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.callback_query?.data }}",
+                    "rightValue": "status:",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "node-switch-event",
+      "name": "Розподіл подій (/start чи Кнопка)",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [460, 840]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>РемБригада Луцьк</b>\\n<i>Професійний ремонт квартир та приміщень від команди з 5 майстрів</i>\\n\\n• Ремонт під ключ у новобудовах та вторинці\\n• Ванні кімнати та кухні під ключ\\n• Електромонтаж та сантехніка без посередників\\n• Безкоштовний виїзд виконроба на замір по Луцьку\\n\\nНатисніть кнопку нижче, щоб розрахувати попередній кошторис за 1 хвилину:\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"🚀 Відкрити сервіс\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
+      },
+      "id": "node-send-single-start",
+      "name": "Єдине стильне привітання /start",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [760, 780]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse callback query data: e.g. status:in_progress:+380501234567\nconst cb = $input.first().json.callback_query;\nconst parts = (cb?.data || '').split(':');\nconst statusCode = parts[1] || 'in_progress';\nconst clientPhone = parts[2] || '';\n\nconst statusTitles = {\n  in_progress: '📞 Взяв у роботу',\n  measuring: '📐 Призначено замір',\n  deal: '🤝 Укладено договір',\n  rejected: '❌ Відхилено'\n};\n\nconst newStatusText = statusTitles[statusCode] || statusCode;\nconst adminName = cb?.from?.first_name || 'Адмін';\nconst originalText = cb?.message?.text || '';\nconst messageId = cb?.message?.message_id;\nconst chatId = cb?.message?.chat?.id;\nconst callbackId = cb?.id;\n\nconst now = new Date();\nconst timeStr = now.toLocaleTimeString('uk-UA', { timeZone: 'Europe/Kyiv', hour: '2-digit', minute: '2-digit' });\n\nreturn [{\n  json: {\n    callbackId,\n    chatId,\n    messageId,\n    clientPhone,\n    newStatusText,\n    adminName,\n    timeStr,\n    updatedCardText: originalText + `\\n\\n⚡ <b>ОНОВЛЕННЯ:</b> ${newStatusText}\\n👤 <b>Обробив:</b> ${adminName} о ${timeStr}`\n  }\n}];"
+      },
+      "id": "node-parse-callback",
+      "name": "Парсинг натискання кнопки",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 960]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/answerCallbackQuery",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"callback_query_id\": \"{{ $json.callbackId }}\",\n  \"text\": \"✅ Статус оновлено на: {{ $json.newStatusText }}\",\n  \"show_alert\": false\n}"
+      },
+      "id": "node-answer-callback",
+      "name": "Сповіщення в Telegram (Toast)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 960]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/editMessageText",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": {{ $json.chatId }},\n  \"message_id\": {{ $json.messageId }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"{{ $json.updatedCardText.replace(/\\n/g, '\\\\n') }}\"\n}"
+      },
+      "id": "node-edit-admin-message",
+      "name": "Оновлення картки в чаті Адміна",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 960]
+    }
+  ],
+  "connections": {
+    "Webhook TMA (Квіз)": {
+      "main": [
+        [
+          {
+            "node": "Розрахунок кошторису (Луцьк)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Розрахунок кошторису (Луцьк)": {
+      "main": [
+        [
+          {
+            "node": "Запис у Google Таблицю",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Запис у Google Таблицю": {
+      "main": [
+        [
+          {
+            "node": "Сповіщення Адміну",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сповіщення Адміну": {
+      "main": [
+        [
+          {
+            "node": "Чек клієнту в Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Чек клієнту в Telegram": {
+      "main": [
+        [
+          {
+            "node": "Відповідь у TMA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Admin (Отримати ліди)": {
+      "main": [
+        [
+          {
+            "node": "RBAC Перевірка Адміна",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "RBAC Перевірка Адміна": {
+      "main": [
+        [
+          {
+            "node": "Читання лідів з Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Відповідь 403 Forbidden",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Читання лідів з Sheets": {
+      "main": [
+        [
+          {
+            "node": "Форматування списку лідів",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Форматування списку лідів": {
+      "main": [
+        [
+          {
+            "node": "Відповідь з лідами для TMA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Bot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Розподіл подій (/start чи Кнопка)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Розподіл подій (/start чи Кнопка)": {
+      "main": [
+        [
+          {
+            "node": "Єдине стильне привітання /start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Парсинг натискання кнопки",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Парсинг натискання кнопки": {
+      "main": [
+        [
+          {
+            "node": "Сповіщення в Telegram (Toast)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сповіщення в Telegram (Toast)": {
+      "main": [
+        [
+          {
+            "node": "Оновлення картки в чаті Адміна",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

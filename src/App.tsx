@@ -185,55 +185,55 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#121518] text-[#F3F4F6] flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 pb-8 sm:py-6">
+    <div className="min-h-screen bg-[#0B0D11] text-[#F3F4F6] flex flex-col justify-between max-w-md mx-auto relative px-4 py-4 pb-8 sm:py-6">
       {/* Top Header */}
-      <header className="mb-3">
-        <div className="flex items-center justify-between pb-3 border-b border-[#2D343B]">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#D97706] to-[#F59E0B] flex items-center justify-center text-white shadow-sm">
+      <header className="mb-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.15)]">
               <Wrench className="w-4 h-4" />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight text-[#F3F4F6]">
+              <h1 className="text-sm font-bold tracking-tight text-white">
                 Калькулятор ремонту
               </h1>
-              <p className="text-[11px] text-[#9CA3AF]">
+              <p className="text-[11px] text-neutral-400">
                 Розрахунок за 1 хвилину
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-1 text-[11px] text-[#9CA3AF] bg-[#1A1F24] border border-[#2D343B] px-2.5 py-1 rounded-full">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#F59E0B]" />
+          <div className="flex items-center gap-1 text-[11px] text-neutral-400 bg-white/[0.04] border border-white/[0.08] px-2.5 py-1 rounded-full backdrop-blur-md">
+            <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
             <span>Точний прайс</span>
           </div>
         </div>
 
-        {/* RBAC Admin Tab Switcher: Only rendered for Admin */}
+        {/* iOS Segmented Control for Admin */}
         {isAdmin && (
-          <div className="mt-3 p-1 bg-[#1A1F24] border border-[#2D343B] rounded-xl flex items-center gap-1 shadow-sm">
+          <div className="mt-3.5 p-1 bg-white/[0.05] border border-white/[0.08] rounded-2xl flex items-center gap-1 shadow-sm backdrop-blur-md">
             <button
               type="button"
               onClick={() => handleTabChange('quiz')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
                 activeTab === 'quiz'
-                  ? 'bg-gradient-to-r from-[#D97706] to-[#B45309] text-white shadow-sm'
-                  : 'text-[#9CA3AF] hover:text-[#F3F4F6]'
+                  ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-500/30 shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
               <Calculator className="w-3.5 h-3.5" />
-              <span>Квіз-калькулятор</span>
+              <span>Калькулятор</span>
             </button>
 
             <button
               type="button"
               onClick={() => handleTabChange('admin')}
-              className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+              className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-[0.98] ${
                 activeTab === 'admin'
-                  ? 'bg-gradient-to-r from-[#D97706] to-[#B45309] text-white shadow-sm'
-                  : 'text-[#9CA3AF] hover:text-[#F3F4F6]'
+                  ? 'bg-gradient-to-r from-amber-500/20 to-amber-600/20 text-amber-300 border border-amber-500/30 shadow-sm'
+                  : 'text-neutral-400 hover:text-white'
               }`}
             >
-              <Crown className="w-3.5 h-3.5 text-[#FBBF24]" />
+              <Crown className="w-3.5 h-3.5 text-amber-400" />
               <span>Заявки CRM</span>
             </button>
           </div>
@@ -303,23 +303,23 @@ export const App: React.FC = () => {
         )}
       </main>
 
-      {/* Bottom Sticky / Bar for Steps 1 - 4 (Only in Quiz view) */}
+      {/* Floating Frosted Glass Bottom Bar for Steps 1 - 4 (Only in Quiz view) */}
       {(!isAdmin || activeTab === 'quiz') && step < 5 && (
-        <footer className="sticky bottom-0 pt-4 pb-2 bg-[#121518]/95 backdrop-blur-md border-t border-[#2D343B]/80 mt-6 z-10">
+        <footer className="sticky bottom-0 pt-3 pb-2 bg-[#0B0D11]/80 backdrop-blur-2xl border-t border-white/[0.08] mt-6 z-10">
           <div className="flex items-center justify-between gap-3">
             {/* Previous Step Button */}
             {step > 1 ? (
               <button
                 type="button"
                 onClick={handlePrevStep}
-                className="p-3.5 rounded-xl bg-[#1A1F24] border border-[#2D343B] text-[#9CA3AF] hover:text-[#F3F4F6] hover:border-[#3E4750] active:scale-95 transition-all flex items-center justify-center"
+                className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] text-neutral-300 hover:text-white hover:border-white/[0.15] active:scale-95 transition-all flex items-center justify-center shadow-sm"
                 aria-label="Попередній крок"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
             ) : (
-              <div className="text-[11px] text-[#9CA3AF]">
-                Попередньо: <span className="text-[#FBBF24] font-bold">{estimate.totalFormatted}</span>
+              <div className="text-[11px] text-neutral-400 pl-1">
+                Попередньо: <span className="text-amber-400 font-bold">{estimate.totalFormatted}</span>
               </div>
             )}
 
@@ -327,7 +327,7 @@ export const App: React.FC = () => {
             <button
               type="button"
               onClick={handleNextStep}
-              className="flex-1 py-3.5 px-5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#E08316] hover:to-[#C25E12] active:scale-[0.99] transition-all shadow-[0_4px_16px_rgba(217,119,6,0.25)] flex items-center justify-center gap-2 border border-[#F59E0B]/30"
+              className="flex-1 h-12 px-5 rounded-2xl font-medium text-sm text-white bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#F59E0B] hover:to-[#D97706] active:scale-[0.98] transition-all shadow-[0_8px_20px_-4px_rgba(217,119,6,0.35)] flex items-center justify-center gap-2 border border-amber-500/30"
             >
               <span>Далі</span>
               <ArrowRight className="w-4 h-4" />

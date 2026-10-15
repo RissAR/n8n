@@ -13,8 +13,8 @@ export const initTelegramApp = (): void => {
     try {
       tg.ready?.();
       tg.expand?.();
-      tg.setHeaderColor?.('#121518');
-      tg.setBackgroundColor?.('#121518');
+      tg.setHeaderColor?.('#0B0D11');
+      tg.setBackgroundColor?.('#0B0D11');
       tg.enableClosingConfirmation?.();
     } catch (e) {
       console.warn('Telegram WebApp init warning:', e);

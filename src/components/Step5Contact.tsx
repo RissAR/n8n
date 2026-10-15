@@ -82,24 +82,24 @@ export const Step5Contact: React.FC<Step5Props> = ({
   return (
     <div className="space-y-5">
       <div className="mb-2">
-        <h2 className="text-xl font-bold text-[#F3F4F6] tracking-tight">
+        <h2 className="text-2xl font-bold text-white tracking-tight">
           Контактні дані та терміни
         </h2>
-        <p className="text-sm text-[#9CA3AF] mt-1">
+        <p className="text-xs text-neutral-400 mt-1">
           Куди надіслати детальний кошторис та коли плануєте розпочинати?
         </p>
       </div>
 
       {errorMessage && (
-        <div className="p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-red-200 text-xs leading-relaxed">
+        <div className="p-3.5 bg-red-950/40 border border-red-500/30 rounded-2xl text-red-200 text-xs leading-relaxed backdrop-blur-md">
           {errorMessage}
         </div>
       )}
 
       {/* Name Input */}
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[#9CA3AF] flex items-center gap-1.5">
-          <User className="w-3.5 h-3.5 text-[#F59E0B]" />
+        <label className="text-xs font-medium text-neutral-400 flex items-center gap-1.5">
+          <User className="w-3.5 h-3.5 text-amber-400" />
           Ваше ім'я
         </label>
         <div className="relative">
@@ -108,16 +108,16 @@ export const Step5Contact: React.FC<Step5Props> = ({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Введіть ваше ім'я"
-            className="w-full bg-[#1A1F24] border border-[#2D343B] focus:border-[#F59E0B] focus:outline-none rounded-xl px-4 py-3 text-sm text-[#F3F4F6] placeholder-[#6B7280] transition-colors"
+            className="w-full bg-white/[0.04] border border-white/[0.1] focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 rounded-2xl px-4 py-3.5 text-sm text-white placeholder-neutral-500 transition-all focus:outline-none"
           />
         </div>
       </div>
 
       {/* Phone Input with Ukrainian Mask */}
       <div className="space-y-1.5">
-        <label className="text-xs font-semibold text-[#9CA3AF] flex items-center gap-1.5">
-          <Phone className="w-3.5 h-3.5 text-[#F59E0B]" />
-          Номер телефону <span className="text-[#F59E0B]">*</span>
+        <label className="text-xs font-medium text-neutral-400 flex items-center gap-1.5">
+          <Phone className="w-3.5 h-3.5 text-amber-400" />
+          Номер телефону <span className="text-amber-400">*</span>
         </label>
         <div className="relative">
           <input
@@ -125,14 +125,14 @@ export const Step5Contact: React.FC<Step5Props> = ({
             value={phone}
             onChange={handlePhoneInput}
             placeholder="+380 (XX) XXX-XX-XX"
-            className={`w-full bg-[#1A1F24] border rounded-xl px-4 py-3 text-sm text-[#F3F4F6] placeholder-[#6B7280] focus:outline-none transition-colors ${
+            className={`w-full bg-white/[0.04] border rounded-2xl px-4 py-3.5 text-sm text-white placeholder-neutral-500 focus:outline-none transition-all ${
               isPhoneValid
-                ? 'border-[#F59E0B] ring-1 ring-[#F59E0B]/30'
-                : 'border-[#2D343B] focus:border-[#F59E0B]'
+                ? 'border-amber-500/50 ring-2 ring-amber-500/20'
+                : 'border-white/[0.1] focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20'
             }`}
           />
         </div>
-        <div className="flex items-center justify-between text-[11px] text-[#6B7280] px-0.5">
+        <div className="flex items-center justify-between text-[11px] text-neutral-500 px-1">
           <span>Формат: +380 (XX) XXX-XX-XX</span>
           {nationalDigits.length > 0 && !isPhoneValid && (
             <span className="text-amber-400 font-medium">
@@ -147,8 +147,8 @@ export const Step5Contact: React.FC<Step5Props> = ({
 
       {/* Start Date Selection */}
       <div className="space-y-2 pt-1">
-        <label className="text-xs font-semibold text-[#9CA3AF] flex items-center gap-1.5">
-          <Calendar className="w-3.5 h-3.5 text-[#F59E0B]" />
+        <label className="text-xs font-medium text-neutral-400 flex items-center gap-1.5">
+          <Calendar className="w-3.5 h-3.5 text-amber-400" />
           Коли плануєте розпочати ремонт?
         </label>
         <div className="space-y-2">
@@ -159,21 +159,21 @@ export const Step5Contact: React.FC<Step5Props> = ({
                 key={opt.id}
                 type="button"
                 onClick={() => handleStartDateSelect(opt.id)}
-                className={`w-full text-left p-3.5 rounded-xl border text-xs font-medium transition-all active:scale-[0.99] flex items-center justify-between ${
+                className={`w-full text-left p-3.5 rounded-2xl border text-xs font-medium transition-all active:scale-[0.985] flex items-center justify-between ${
                   isSelected
-                    ? 'bg-[#1A1F24] border-[#F59E0B] text-[#F3F4F6] shadow-sm ring-1 ring-[#F59E0B]/30'
-                    : 'bg-[#1A1F24]/60 border-[#2D343B] text-[#9CA3AF] hover:text-[#F3F4F6] hover:border-[#3E4750]'
+                    ? 'border-amber-500/40 bg-gradient-to-b from-amber-500/[0.12] to-amber-500/[0.02] text-white shadow-[0_0_16px_rgba(245,158,11,0.15)]'
+                    : 'bg-[#13161C]/60 backdrop-blur-lg border-white/[0.07] text-neutral-400 hover:text-white hover:border-white/[0.15]'
                 }`}
               >
                 <span>{opt.label}</span>
                 <div
-                  className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                  className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
                     isSelected
-                      ? 'border-[#F59E0B] bg-[#F59E0B]'
-                      : 'border-[#3E4750] bg-transparent'
+                      ? 'border-2 border-amber-400 bg-amber-500/10'
+                      : 'border-white/20 bg-white/[0.03]'
                   }`}
                 >
-                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-white" />}
+                  {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
                 </div>
               </button>
             );
@@ -187,15 +187,15 @@ export const Step5Contact: React.FC<Step5Props> = ({
           type="button"
           onClick={onSubmit}
           disabled={isLoading || !isPhoneValid}
-          className={`w-full py-4 rounded-xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 border ${
+          className={`w-full py-4 rounded-2xl font-bold text-sm text-white transition-all flex items-center justify-center gap-2 border ${
             !isPhoneValid || isLoading
-              ? 'bg-[#232A31] border-[#2D343B] text-[#6B7280] opacity-40 cursor-not-allowed shadow-none'
-              : 'bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#E08316] hover:to-[#C25E12] active:scale-[0.99] border-[#F59E0B]/40 shadow-[0_4px_20px_rgba(217,119,6,0.3)]'
+              ? 'bg-white/[0.04] border-white/[0.06] text-neutral-600 opacity-40 cursor-not-allowed shadow-none'
+              : 'bg-gradient-to-r from-[#D97706] to-[#B45309] hover:from-[#F59E0B] hover:to-[#D97706] active:scale-[0.98] border-amber-500/40 shadow-[0_8px_24px_-4px_rgba(217,119,6,0.35)]'
           }`}
         >
           {isLoading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin text-[#F59E0B]" />
+              <Loader2 className="w-5 h-5 animate-spin text-amber-300" />
               <span>Розраховуємо кошторис...</span>
             </>
           ) : (

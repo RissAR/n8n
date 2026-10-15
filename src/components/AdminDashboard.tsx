@@ -405,13 +405,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ currentUserId })
 
                 {/* Phone Call Button */}
                 <div className="pt-0.5">
-                  <a
-                    href={`tel:${cleanPhone}`}
-                    className="w-full py-2.5 px-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/[0.08] text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all shadow-sm"
-                  >
-                    <Phone className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Зателефонувати: {lead.phone || 'Не вказано'}</span>
-                  </a>
+                  {cleanPhone.length >= 9 && !lead.phone?.includes('#ERROR') ? (
+                    <a
+                      href={`tel:${cleanPhone}`}
+                      className="w-full py-2.5 px-3 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] active:scale-[0.98] border border-white/[0.08] text-xs font-semibold text-white flex items-center justify-center gap-2 transition-all shadow-sm"
+                    >
+                      <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Зателефонувати: {lead.phone}</span>
+                    </a>
+                  ) : (
+                    <div className="w-full py-2.5 px-3 rounded-2xl bg-white/[0.02] border border-white/[0.05] text-xs text-neutral-400 flex items-center justify-center gap-2">
+                      <Phone className="w-3.5 h-3.5 text-neutral-500" />
+                      <span>
+                        {lead.phone?.includes('#ERROR')
+                          ? 'Телефон: помилка запису в Sheets'
+                          : `Телефон: ${lead.phone || 'Не вказано'}`}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             );

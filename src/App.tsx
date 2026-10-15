@@ -98,17 +98,25 @@ export const App: React.FC = () => {
     const tg = getTelegramWebApp();
     if (!tg?.BackButton) return;
 
-    if (step > 1 && step < 6) {
-      tg.BackButton.show();
-      const onBack = () => {
-        handlePrevStep();
-      };
-      tg.BackButton.onClick(onBack);
-      return () => {
-        tg.BackButton.offClick(onBack);
-      };
-    } else {
-      tg.BackButton.hide();
+    try {
+      if (step > 1 && step < 6) {
+        tg.BackButton?.show?.();
+        const onBack = () => {
+          handlePrevStep();
+        };
+        tg.BackButton?.onClick?.(onBack);
+        return () => {
+          try {
+            tg.BackButton?.offClick?.(onBack);
+          } catch {
+            // Ignore
+          }
+        };
+      } else {
+        tg.BackButton?.hide?.();
+      }
+    } catch (e) {
+      console.warn('Telegram BackButton warning:', e);
     }
   }, [step, handlePrevStep]);
 

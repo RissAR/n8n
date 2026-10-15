@@ -1,0 +1,169 @@
+{
+  "name": "TMA Quiz Calculator & Lead Generation",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "quiz-calculator",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook-trigger",
+      "name": "Webhook TMA",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "tma-quiz-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract payload from Webhook\nconst body = $input.first().json.body || $input.first().json;\n\n// 2. Extract inputs with defaults\nconst repairType = body.quiz?.repair_type || 'cosmetic';\nconst propertyType = body.quiz?.property_type || 'new';\nconst areaM2 = Number(body.quiz?.area_m2) || 50;\nconst addons = Array.isArray(body.quiz?.addons) ? body.quiz.addons : [];\n\n// 3. Tariffs & Calculation Matrix\nconst baseRates = {\n  cosmetic: 2500,\n  capital: 5000,\n  designer: 8500\n};\nconst rateTitles = {\n  cosmetic: 'Косметичний (2 500 грн/м²)',\n  capital: 'Капітальний (5 000 грн/м²)',\n  designer: 'Дизайнерський (8 500 грн/м²)'\n};\n\nconst propMultipliers = {\n  new: 1.0,\n  secondary: 1.25\n};\nconst propTitles = {\n  new: 'Новобудова (x1.0)',\n  secondary: 'Вторинне житло (x1.25)'\n};\n\nconst addonPrices = {\n  design_project: { title: 'Дизайн-проєкт', price: 15000 },\n  electric_plumbing: { title: 'Сантехніка та електрика', price: 25000 },\n  materials_delivery: { title: 'Закупівля та доставка матеріалів', price: 8000 }\n};\n\nconst baseRate = baseRates[repairType] || 2500;\nconst multiplier = propMultipliers[propertyType] || 1.0;\n\nlet addonsTotal = 0;\nconst addonsNames = [];\naddons.forEach(key => {\n  if (addonPrices[key]) {\n    addonsTotal += addonPrices[key].price;\n    addonsNames.push(`${addonPrices[key].title} (+${addonPrices[key].price.toLocaleString('uk-UA')} грн)`);\n  }\n});\n\nconst baseCost = Math.round(areaM2 * baseRate * multiplier);\nconst totalAmount = baseCost + addonsTotal;\n\n// 4. Client & Contact Metadata\nconst userId = body.user?.id ? String(body.user.id) : '';\nconst username = body.user?.username ? `@${body.user.username}` : 'Немає юзернейма';\nconst clientName = body.contact?.name || body.user?.first_name || 'Гість';\nconst clientPhone = body.contact?.phone || 'Не вказано';\n\n// Kyiv Timestamp\nconst now = new Date();\nconst timestamp = now.toLocaleString('uk-UA', { timeZone: 'Europe/Kyiv' });\n\nreturn [{\n  json: {\n    timestamp,\n    userId,\n    username,\n    clientName,\n    clientPhone,\n    repairTypeTitle: rateTitles[repairType] || repairType,\n    propertyTypeTitle: propTitles[propertyType] || propertyType,\n    areaM2,\n    addonsTitles: addonsNames.length > 0 ? addonsNames.join(', ') : 'Без додаткових опцій',\n    baseCost,\n    addonsTotal,\n    totalAmount,\n    totalFormatted: totalAmount.toLocaleString('uk-UA') + ' грн',\n    status: 'Новий лід'\n  }\n}];"
+      },
+      "id": "node-code-calculate",
+      "name": "Розрахунок кошторису",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Sheet1",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата/Час": "={{ $json.timestamp }}",
+            "User ID": "={{ $json.userId }}",
+            "Username": "={{ $json.username }}",
+            "Ім'я": "={{ $json.clientName }}",
+            "Телефон": "={{ $json.clientPhone }}",
+            "Тип ремонту": "={{ $json.repairTypeTitle }}",
+            "Тип житла": "={{ $json.propertyTypeTitle }}",
+            "Площа (м²)": "={{ $json.areaM2 }}",
+            "Додаткові опції": "={{ $json.addonsTitles }}",
+            "Розрахунок (грн)": "={{ $json.totalFormatted }}",
+            "Статус": "={{ $json.status }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "node-google-sheets",
+      "name": "Запис у Google Таблицю",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "8607080614",
+        "text": "=🔨 <b>НОВИЙ РОЗРАХУНОК РЕМОНТУ (TMA)</b>\n\n👤 <b>Клієнт:</b> {{ $json[\"Ім'я\"] }} ({{ $json.Username }})\n📞 <b>Телефон:</b> <code>{{ $json['Телефон'] }}</code>\n🆔 <b>User ID:</b> <code>{{ $json['User ID'] }}</code>\n\n📐 <b>Параметри об'єкта:</b>\n• <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\n• <b>Тип житла:</b> {{ $json['Тип житла'] }}\n• <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\n• <b>Додаткові опції:</b> {{ $json['Додаткові опції'] }}\n\n💰 <b>Розрахована вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\n🕒 <b>Час:</b> {{ $json['Дата/Час'] }}",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "node-telegram-admin",
+      "name": "Сповіщення Адміну",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [960, 200]
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json['User ID'] }}",
+        "text": "=👋 <b>Дякуємо, {{ $json[\"Ім'я\"] }}!</b>\n\nВаш попередній розрахунок вартості ремонту успішно сформовано:\n\n📐 <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\n🔨 <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\n💰 <b>Орієнтовна вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\n\nНаш майстер-кошторисник зв'яжеться з вами найближчим часом за номером <code>{{ $json['Телефон'] }}</code> для узгодження деталей та безкоштовного заміру.",
+        "additionalFields": {
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "node-telegram-client",
+      "name": "Чек клієнту в Telegram",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [1200, 200],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ success: true, totalFormatted: $json['Розрахунок (грн)'], totalAmount: $node['Розрахунок кошторису'].json.totalAmount, timestamp: $json['Дата/Час'] }) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-webhook",
+      "name": "Відповідь у TMA",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 300]
+    }
+  ],
+  "connections": {
+    "Webhook TMA": {
+      "main": [
+        [
+          {
+            "node": "Розрахунок кошторису",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Розрахунок кошторису": {
+      "main": [
+        [
+          {
+            "node": "Запис у Google Таблицю",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Запис у Google Таблицю": {
+      "main": [
+        [
+          {
+            "node": "Сповіщення Адміну",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Сповіщення Адміну": {
+      "main": [
+        [
+          {
+            "node": "Чек клієнту в Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Чек клієнту в Telegram": {
+      "main": [
+        [
+          {
+            "node": "Відповідь у TMA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

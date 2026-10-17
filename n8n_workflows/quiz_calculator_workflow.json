@@ -30,7 +30,7 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -64,7 +64,7 @@
     },
     {
       "parameters": {
-        "chatId": "8607080614",
+        "chatId": "YOUR_TELEGRAM_ADMIN_CHAT_ID",
         "text": "=🔨 <b>НОВИЙ РОЗРАХУНОК РЕМОНТУ (TMA)</b>\n\n👤 <b>Клієнт:</b> {{ $json[\"Ім'я\"] }} ({{ $json.Username }})\n📞 <b>Телефон:</b> <code>{{ $json['Телефон'] }}</code>\n🆔 <b>User ID:</b> <code>{{ $json['User ID'] }}</code>\n\n📐 <b>Параметри об'єкта:</b>\n• <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\n• <b>Тип житла:</b> {{ $json['Тип житла'] }}\n• <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\n• <b>Додаткові опції:</b> {{ $json['Додаткові опції'] }}\n\n💰 <b>Розрахована вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\n🕒 <b>Час:</b> {{ $json['Дата/Час'] }}",
         "additionalFields": {
           "parse_mode": "HTML"

@@ -30,7 +30,7 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -65,10 +65,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": 8607080614,\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>НОВИЙ РОЗРАХУНОК РЕМОНТУ (TMA)</b>\\n\\n👤 <b>Клієнт:</b> {{ $json[\"Ім'я\"] }} ({{ $json.Username }})\\n📞 <b>Телефон:</b> <code>{{ $json['Телефон'] }}</code>\\n🆔 <b>User ID:</b> <code>{{ $json['User ID'] }}</code>\\n\\n📐 <b>Параметри об'єкта:</b>\\n• <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\\n• <b>Тип житла:</b> {{ $json['Тип житла'] }}\\n• <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\\n• <b>Додаткові опції:</b> {{ $json['Додаткові опції'] }}\\n\\n💰 <b>Розрахована вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\\n🕒 <b>Час:</b> {{ $json['Дата/Час'] }}\\n\\n📌 <b>Статус:</b> 🟡 <i>Новий лід</i>\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        { \"text\": \"📞 Взяв у роботу\", \"callback_data\": \"status:in_progress:{{ $json['Телефон'] }}\" },\n        { \"text\": \"📐 Замір\", \"callback_data\": \"status:measuring:{{ $json['Телефон'] }}\" }\n      ],\n      [\n        { \"text\": \"🤝 Угода\", \"callback_data\": \"status:deal:{{ $json['Телефон'] }}\" },\n        { \"text\": \"❌ Відхилено\", \"callback_data\": \"status:rejected:{{ $json['Телефон'] }}\" }\n      ]\n    ]\n  }\n}"
+        "jsonBody": "={\n  \"chat_id\": YOUR_TELEGRAM_ADMIN_CHAT_ID,\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>НОВИЙ РОЗРАХУНОК РЕМОНТУ (TMA)</b>\\n\\n👤 <b>Клієнт:</b> {{ $json[\"Ім'я\"] }} ({{ $json.Username }})\\n📞 <b>Телефон:</b> <code>{{ $json['Телефон'] }}</code>\\n🆔 <b>User ID:</b> <code>{{ $json['User ID'] }}</code>\\n\\n📐 <b>Параметри об'єкта:</b>\\n• <b>Тип ремонту:</b> {{ $json['Тип ремонту'] }}\\n• <b>Тип житла:</b> {{ $json['Тип житла'] }}\\n• <b>Площа:</b> {{ $json['Площа (м²)'] }} м²\\n• <b>Додаткові опції:</b> {{ $json['Додаткові опції'] }}\\n\\n💰 <b>Розрахована вартість:</b> <b>{{ $json['Розрахунок (грн)'] }}</b>\\n🕒 <b>Час:</b> {{ $json['Дата/Час'] }}\\n\\n📌 <b>Статус:</b> 🟡 <i>Новий лід</i>\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        { \"text\": \"📞 Взяв у роботу\", \"callback_data\": \"status:in_progress:{{ $json['Телефон'] }}\" },\n        { \"text\": \"📐 Замір\", \"callback_data\": \"status:measuring:{{ $json['Телефон'] }}\" }\n      ],\n      [\n        { \"text\": \"🤝 Угода\", \"callback_data\": \"status:deal:{{ $json['Телефон'] }}\" },\n        { \"text\": \"❌ Відхилено\", \"callback_data\": \"status:rejected:{{ $json['Телефон'] }}\" }\n      ]\n    ]\n  }\n}"
       },
       "id": "node-alert-admin",
       "name": "Сповіщення Адміну",
@@ -130,7 +130,7 @@
           "conditions": [
             {
               "leftValue": "={{ String($json.body?.userId || $json.userId) }}",
-              "rightValue": "8607080614",
+              "rightValue": "YOUR_TELEGRAM_ADMIN_CHAT_ID",
               "operator": {
                 "type": "string",
                 "operation": "equals"
@@ -166,7 +166,7 @@
         "operation": "read",
         "documentId": {
           "__rl": true,
-          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -285,7 +285,7 @@
           "conditions": [
             {
               "leftValue": "={{ String($json.message?.from?.id) }}",
-              "rightValue": "8607080614",
+              "rightValue": "YOUR_TELEGRAM_ADMIN_CHAT_ID",
               "operator": {
                 "type": "string",
                 "operation": "equals"
@@ -305,7 +305,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>Ремонт Під Ключ</b>\\n\\nВітаємо, Андрію! Доступ активовано з правами <b>Адміністратора</b>.\\n\\nНатисніть кнопку нижче, щоб відкрити додаток:\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"🚀 Відкрити сервіс\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
@@ -319,7 +319,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>Вітаємо у будівельній команді «Ремонт Під Ключ»!</b>\\n\\nМи виконуємо якісний ремонт квартир під ключ та окремих приміщень у Києві та області.\\n\\n📊 <b>Дізнайтеся точну вартість робіт за 1 хвилину:</b>\\nСкористайтеся нашим швидким онлайн-калькулятором — оберіть параметри та отримайте детальний попередній кошторис.\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"🧮 Відкрити калькулятор ремонту\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
@@ -343,7 +343,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/answerCallbackQuery",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/answerCallbackQuery",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"callback_query_id\": \"{{ $json.callbackId }}\",\n  \"text\": \"✅ Статус оновлено на: {{ $json.newStatusText }}\",\n  \"show_alert\": false\n}"
@@ -357,7 +357,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/editMessageText",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/editMessageText",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"chat_id\": {{ $json.chatId }},\n  \"message_id\": {{ $json.messageId }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"{{ $json.updatedCardText.replace(/\\n/g, '\\\\n') }}\"\n}"

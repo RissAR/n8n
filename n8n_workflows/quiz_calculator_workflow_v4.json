@@ -36,7 +36,7 @@
         "operation": "append",
         "documentId": {
           "__rl": true,
-          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -74,10 +74,10 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": 8607080614,\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>НОВА ЗАЯВКА: РЕМБРИГАДА ЛУЦЬК</b>\\n\\n👤 <b>Клієнт:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.clientName }} ({{ $('Розрахунок кошторису (Луцьк)').item.json.username }})\\n📞 <b>Телефон:</b> <code>{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}</code>\\n📍 <b>Локація / Район:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.district }}\\n\\n📐 <b>Замовлення:</b>\\n• <b>Напрямок:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.scopeTitle }}\\n• <b>Деталі:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.detailTitle }}\\n• <b>Додаткові опції:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.addonsTitles }}\\n\\n💰 <b>Попередній кошторис:</b> <b>{{ $('Розрахунок кошторису (Луцьк)').item.json.totalFormatted }}</b>\\n🕒 <b>Час:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.timestamp }}\\n\\n📌 <b>Статус:</b> 🟡 <i>Новий лід</i>\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        { \"text\": \"📞 Взяв у роботу\", \"callback_data\": \"status:in_progress:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" },\n        { \"text\": \"📐 Замір\", \"callback_data\": \"status:measuring:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" }\n      ],\n      [\n        { \"text\": \"🤝 Угода\", \"callback_data\": \"status:deal:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" },\n        { \"text\": \"❌ Відхилено\", \"callback_data\": \"status:rejected:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" }\n      ]\n    ]\n  }\n}"
+        "jsonBody": "={\n  \"chat_id\": YOUR_TELEGRAM_ADMIN_CHAT_ID,\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>НОВА ЗАЯВКА: РЕМБРИГАДА ЛУЦЬК</b>\\n\\n👤 <b>Клієнт:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.clientName }} ({{ $('Розрахунок кошторису (Луцьк)').item.json.username }})\\n📞 <b>Телефон:</b> <code>{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}</code>\\n📍 <b>Локація / Район:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.district }}\\n\\n📐 <b>Замовлення:</b>\\n• <b>Напрямок:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.scopeTitle }}\\n• <b>Деталі:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.detailTitle }}\\n• <b>Додаткові опції:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.addonsTitles }}\\n\\n💰 <b>Попередній кошторис:</b> <b>{{ $('Розрахунок кошторису (Луцьк)').item.json.totalFormatted }}</b>\\n🕒 <b>Час:</b> {{ $('Розрахунок кошторису (Луцьк)').item.json.timestamp }}\\n\\n📌 <b>Статус:</b> 🟡 <i>Новий лід</i>\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        { \"text\": \"📞 Взяв у роботу\", \"callback_data\": \"status:in_progress:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" },\n        { \"text\": \"📐 Замір\", \"callback_data\": \"status:measuring:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" }\n      ],\n      [\n        { \"text\": \"🤝 Угода\", \"callback_data\": \"status:deal:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" },\n        { \"text\": \"❌ Відхилено\", \"callback_data\": \"status:rejected:{{ $('Розрахунок кошторису (Луцьк)').item.json.clientPhone.replace(/^'/, '') }}\" }\n      ]\n    ]\n  }\n}"
       },
       "id": "node-alert-admin",
       "name": "Сповіщення Адміну",
@@ -151,7 +151,7 @@
           "conditions": [
             {
               "leftValue": "={{ String($json.body?.userId || $json.userId) }}",
-              "rightValue": "8607080614",
+              "rightValue": "YOUR_TELEGRAM_ADMIN_CHAT_ID",
               "operator": {
                 "type": "string",
                 "operation": "equals"
@@ -193,7 +193,7 @@
         "operation": "read",
         "documentId": {
           "__rl": true,
-          "value": "1TjxsDmAkoUYrtvxYpSOzajaGpKQvjiAqzIWi4OpNcVo",
+          "value": "YOUR_GOOGLE_SHEET_ID",
           "mode": "id"
         },
         "sheetName": {
@@ -319,7 +319,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/sendMessage",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"chat_id\": {{ $json.message.chat.id }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"🔨 <b>РемБригада Луцьк</b>\\n<i>Професійний ремонт квартир та приміщень від команди з 5 майстрів</i>\\n\\n• Ремонт під ключ у новобудовах та вторинці\\n• Ванні кімнати та кухні під ключ\\n• Електромонтаж та сантехніка без посередників\\n• Безкоштовний виїзд виконроба на замір по Луцьку\\n\\nНатисніть кнопку нижче, щоб розрахувати попередній кошторис за 1 хвилину:\",\n  \"reply_markup\": {\n    \"inline_keyboard\": [\n      [\n        {\n          \"text\": \"🚀 Відкрити сервіс\",\n          \"web_app\": { \"url\": \"https://synthetic-during-island-ordinance.trycloudflare.com\" }\n        }\n      ]\n    ]\n  }\n}"
@@ -349,7 +349,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/answerCallbackQuery",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/answerCallbackQuery",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"callback_query_id\": \"{{ $json.callbackId }}\",\n  \"text\": \"✅ Статус оновлено на: {{ $json.newStatusText }}\",\n  \"show_alert\": false\n}"
@@ -366,7 +366,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api.telegram.org/bot8907636227:AAGDaNZltK_fxCuJUbVr2tKMMLqx74baL7c/editMessageText",
+        "url": "https://api.telegram.org/botYOUR_TELEGRAM_BOT_TOKEN/editMessageText",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"chat_id\": {{ $json.chatId }},\n  \"message_id\": {{ $json.messageId }},\n  \"parse_mode\": \"HTML\",\n  \"text\": \"{{ $json.updatedCardText.replace(/\\n/g, '\\\\n') }}\"\n}"
